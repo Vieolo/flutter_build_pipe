@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:build_pipe/utils/builder.utils.dart';
 import 'package:build_pipe/utils/config.utils.dart';
 import 'package:yaml/yaml.dart' as yaml;
 
@@ -34,4 +35,6 @@ void main(List<String> args) async {
     await Process.run("flutter", ["pub", "get"]);
     print("√ Flutter pub packages synced");
   }
+
+  PipeBuilder.buildAll(config);
 }
