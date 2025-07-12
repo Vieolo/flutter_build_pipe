@@ -1,5 +1,6 @@
 import 'package:build_pipe/utils/config.utils.dart';
 import 'package:build_pipe/utils/process.utils.dart';
+import 'package:build_pipe/utils/web.utils.dart';
 
 class PipeBuilder {
   static Future<int> _runBuildCommand(BuildConfig config, BuildConfigPlatform platformConfig, String userfacingPlatform) async {
@@ -36,6 +37,9 @@ class PipeBuilder {
 
   static Future<void> buildWeb(BuildConfig config) async {
     await _runBuildCommand(config, config.web!, "Web");
+    if (config.web!.addVersionQueryParam == true) {
+      await WebUtils.applyCacheBustPostBuild(config);
+    }
   }
 
   static Future<void> buildAll(BuildConfig config) async {

@@ -3,10 +3,14 @@ import 'package:yaml/yaml.dart';
 enum TargetPlatform { web, ios, android, macos, windows, linux }
 
 class BuildConfigPlatform {
+  // General
   TargetPlatform platform;
   String buildCommand;
 
-  BuildConfigPlatform({required this.platform, required this.buildCommand});
+  // Web specific
+  bool? addVersionQueryParam;
+
+  BuildConfigPlatform({required this.platform, required this.buildCommand, this.addVersionQueryParam});
 
   static BuildConfigPlatform? fromMap(YamlMap data, TargetPlatform platform) {
     if (!data.containsKey("build_command") || data["build_command"].toString().isEmpty) {
@@ -15,6 +19,7 @@ class BuildConfigPlatform {
     return BuildConfigPlatform(
       platform: platform,
       buildCommand: data["build_command"],
+      addVersionQueryParam: platform == TargetPlatform.web ? (data['add_version_query_param'] ?? true) : null,
     );
   }
 }
