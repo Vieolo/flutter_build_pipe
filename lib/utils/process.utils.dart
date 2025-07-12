@@ -29,10 +29,10 @@ class ProcessHelper {
       }
 
       logSink = logFile.openWrite(mode: alreadyExists ? FileMode.append : FileMode.write);
-      logSink.writeln("************************");
+      logSink.writeln("** command start ********************");
       logSink.writeln("-- Running : $executable ${arguments.join(" ")}");
       logSink.writeln("-- on      : ${DateTime.now().toIso8601String()}");
-      logSink.writeln("-- output ---------------------\n");
+      logSink.writeln("-- output start ---------------------\n");
     }
     var process = await Process.start(executable, arguments);
     await process.stdout.transform(systemEncoding.decoder).forEach((z) {
@@ -45,9 +45,9 @@ class ProcessHelper {
     });
     int exitCode = await process.exitCode;
     if (logSink != null) {
-      logSink.writeln("\n-- output ---------------------");
+      logSink.writeln("\n-- output end -----------------------");
       logSink.writeln("-- exit code: $exitCode");
-      logSink.writeln("************************");
+      logSink.writeln("** command end **********************\n\n");
       await logSink.close();
     }
 
