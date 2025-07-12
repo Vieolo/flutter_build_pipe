@@ -8,7 +8,7 @@ class WebUtils {
     List<String> logLines = [
       "** action start ********************",
       "-- Running : Applying web cache busting for version: ${config.version}",
-      "-- on      : ${DateTime.now().toIso8601String()}",
+      "-- Time    : ${DateTime.now().toIso8601String()}",
       "-- detail start ---------------------",
     ];
 

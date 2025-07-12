@@ -31,7 +31,7 @@ class ProcessHelper {
       logSink = logFile.openWrite(mode: alreadyExists ? FileMode.append : FileMode.write);
       logSink.writeln("** command start ********************");
       logSink.writeln("-- Running : $executable ${arguments.join(" ")}");
-      logSink.writeln("-- on      : ${DateTime.now().toIso8601String()}");
+      logSink.writeln("-- Time    : ${DateTime.now().toIso8601String()}");
       logSink.writeln("-- output start ---------------------\n");
     }
     var process = await Process.start(executable, arguments);

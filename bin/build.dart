@@ -48,5 +48,10 @@ void main(List<String> args) async {
     );
   }
 
-  PipeBuilder.buildAll(config);
+  await PipeBuilder.buildAll(config);
+
+  print("\nBuild is completed");
+  if (config.generateLog) {
+    print("log is generated at: ${config.logFile}");
+  }
 }
