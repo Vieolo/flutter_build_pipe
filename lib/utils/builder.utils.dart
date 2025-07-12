@@ -2,49 +2,40 @@ import 'package:build_pipe/utils/config.utils.dart';
 import 'package:build_pipe/utils/process.utils.dart';
 
 class PipeBuilder {
-  static Future<int> _runBuildCommand(BuildConfig config, BuildConfigPlatform platformConfig) async {
-    return await ProcessHelper.runCommand(
+  static Future<int> _runBuildCommand(BuildConfig config, BuildConfigPlatform platformConfig, String userfacingPlatform) async {
+    return await ProcessHelper.runCommandUsingConfig(
       executable: platformConfig.buildCommand.split(" ")[0],
       arguments: platformConfig.buildCommand.split(" ").sublist(1),
-      stdoutWrite: config.printstdout,
-      logFilePath: config.logFile,
+      config: config,
+      startMessage: "\nBuilding $userfacingPlatform...",
+      successMessage: "√ $userfacingPlatform build is done\n",
+      errorMessage: "X There was an error building for $userfacingPlatform\n",
+      exitIfError: false,
     );
   }
 
   static Future<void> buildIOS(BuildConfig config) async {
-    print("Building ios...");
-    await _runBuildCommand(config, config.ios!);
-    print("√ iOS build is done");
+    await _runBuildCommand(config, config.ios!, "iOS");
   }
 
   static Future<void> buildAndroid(BuildConfig config) async {
-    print("Building android...");
-    await _runBuildCommand(config, config.android!);
-    print("√ Android build is done");
+    await _runBuildCommand(config, config.android!, "Android");
   }
 
   static Future<void> buildMacOS(BuildConfig config) async {
-    print("Building MacOS...");
-    await _runBuildCommand(config, config.macos!);
-    print("√ MacOS build is done");
+    await _runBuildCommand(config, config.macos!, "macOS");
   }
 
   static Future<void> buildLinux(BuildConfig config) async {
-    print("Building Linux...");
-    await _runBuildCommand(config, config.linux!);
-    print("√ Linux build is done");
+    await _runBuildCommand(config, config.linux!, "Linux");
   }
 
   static Future<void> buildWindows(BuildConfig config) async {
-    print("Building windows...");
-    await _runBuildCommand(config, config.windows!);
-    print("√ Windows build is done");
+    await _runBuildCommand(config, config.windows!, "Windows");
   }
 
   static Future<void> buildWeb(BuildConfig config) async {
-    print("Building web...");
-    await _runBuildCommand(config, config.web!);
-    print("√ Web build is done");
+    await _runBuildCommand(config, config.web!, "Web");
   }
 
   static Future<void> buildAll(BuildConfig config) async {
