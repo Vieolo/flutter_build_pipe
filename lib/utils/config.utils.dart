@@ -66,7 +66,7 @@ class BuildConfig {
     );
   }
 
-  String get logFile => generateLog ? ".flutter_build_pipe/$version/${timestamp.toIso8601String()}.log" : "";
+  String get logFile => generateLog ? ".flutter_build_pipe/logs/$version/${timestamp.toIso8601String()}.log" : "";
   bool get needXCodeDerivedCleaning => (ios != null || macos != null) && xcodeDerivedKey != null && xcodeDerivedKey!.isNotEmpty;
   List<TargetPlatform> get platforms => [
     if (ios != null) TargetPlatform.ios,
