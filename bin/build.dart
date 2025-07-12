@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:build_pipe/utils/builder.utils.dart';
 import 'package:build_pipe/utils/config.utils.dart';
+import 'package:build_pipe/utils/process.utils.dart';
 import 'package:yaml/yaml.dart' as yaml;
 
 void main(List<String> args) async {
@@ -17,7 +18,7 @@ void main(List<String> args) async {
     return;
   }
 
-  final config = BuildConfig.fromMap(pubspec["build_pipe"]);
+  final config = BuildConfig.fromMap(pubspec["build_pipe"], pubspec["version"].split("+")[0]);
   if (config.platforms.isEmpty) {
     print("No target platforms were detected. Please add your target platforms to pubspec");
     return;
@@ -28,12 +29,23 @@ void main(List<String> args) async {
   print("${config.platforms.map((z) => z.name).join(", ")}\n");
 
   if (config.cleanFlutter) {
-    print("Cleaning flutter existing builds...");
-    await Process.run("flutter", ["clean"]);
-    print("√ Flutter cleaned");
-    print("Getting pub packages");
-    await Process.run("flutter", ["pub", "get"]);
-    print("√ Flutter pub packages synced");
+    await ProcessHelper.runCommandUsingConfig(
+      executable: "flutter",
+      arguments: ["clean"],
+      config: config,
+      startMessage: "Cleaning flutter existing builds...",
+      successMessage: "√ Flutter cleaned",
+      errorMessage: "X There was an error while cleaning the Flutter build",
+    );
+
+    await ProcessHelper.runCommandUsingConfig(
+      executable: "flutter",
+      arguments: ["pub", "get"],
+      config: config,
+      startMessage: "Getting pub packages",
+      successMessage: "√ Flutter pub packages synced\n",
+      errorMessage: "X There was an error while getting pub packages",
+    );
   }
 
   PipeBuilder.buildAll(config);

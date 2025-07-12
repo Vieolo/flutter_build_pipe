@@ -28,6 +28,9 @@ class BuildConfig {
   BuildConfigPlatform? linux;
   String? xcodeDerivedKey;
   bool cleanFlutter;
+  bool printstdout;
+  DateTime timestamp;
+  String version;
 
   BuildConfig({
     this.android,
@@ -38,9 +41,12 @@ class BuildConfig {
     this.windows,
     this.xcodeDerivedKey,
     required this.cleanFlutter,
+    required this.printstdout,
+    required this.timestamp,
+    required this.version,
   });
 
-  factory BuildConfig.fromMap(YamlMap data) {
+  factory BuildConfig.fromMap(YamlMap data, String version) {
     YamlMap platforms = data["platforms"] ?? {};
     return BuildConfig(
       android: platforms.containsKey("android") ? BuildConfigPlatform.fromMap(platforms["android"], TargetPlatform.android) : null,
@@ -51,9 +57,13 @@ class BuildConfig {
       web: platforms.containsKey("web") ? BuildConfigPlatform.fromMap(platforms["web"], TargetPlatform.web) : null,
       xcodeDerivedKey: data["xcodeDerivedDataPathEnvKey"],
       cleanFlutter: data["clean_flutter"] ?? true,
+      printstdout: data["print_stdout"] ?? false,
+      timestamp: DateTime.now(),
+      version: version,
     );
   }
 
+  String get logFile => ".flutter_build_pipe/$version/${timestamp.toIso8601String()}.log";
   bool get needXCodeDerivedCleaning => (ios != null || macos != null) && xcodeDerivedKey != null && xcodeDerivedKey!.isNotEmpty;
   List<TargetPlatform> get platforms => [
     if (ios != null) TargetPlatform.ios,
