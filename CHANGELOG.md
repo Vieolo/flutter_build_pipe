@@ -1,3 +1,4 @@
 ## 0.1.0
 
-- Initial version.
+2025-07-12
+- Initial release
