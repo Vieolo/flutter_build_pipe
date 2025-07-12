@@ -22,6 +22,8 @@ include: package:lints/recommended.yaml
 # analyzer:
 #   exclude:
 #     - path/to/excluded/files/**
+formatter: 
+  trailing_commas: preserve
 
 # For more information about the core and recommended set of lints, see
 # https://dart.dev/go/core-lints
