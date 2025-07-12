@@ -15,7 +15,7 @@ class WebUtils {
     print('Applying web cache busting for version: ${config.version}');
 
     final String buildWebPath = "./build/web";
-    (String, String) mainDartJSPattern = (r'"main\.dart\.js"', "main.dart.js?v=${config.version}");
+    (String, String) mainDartJSPattern = (r'main\.dart\.js', "main.dart.js?v=${config.version}");
 
     // Files to be modified
     // Each file has a list of records, the first item is the regex and the second is the replacement
@@ -30,8 +30,8 @@ class WebUtils {
         (r'window\.fetch\(a\),', "window.fetch(a + '?v=${config.version}'),"),
       ],
       p.join(buildWebPath, 'index.html'): [
-        (r'"manifest\.json"', '"manifest.json?v=${config.version}"'),
-        (r'"flutter_bootstrap\.js"', "flutter_bootstrap.js?v=${config.version}"),
+        (r'manifest\.json', 'manifest.json?v=${config.version}'),
+        (r'flutter_bootstrap\.js', "flutter_bootstrap.js?v=${config.version}"),
       ],
     };
 
