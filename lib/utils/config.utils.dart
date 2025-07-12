@@ -31,6 +31,7 @@ class BuildConfig {
   bool printstdout;
   DateTime timestamp;
   String version;
+  bool generateLog;
 
   BuildConfig({
     this.android,
@@ -44,6 +45,7 @@ class BuildConfig {
     required this.printstdout,
     required this.timestamp,
     required this.version,
+    required this.generateLog,
   });
 
   factory BuildConfig.fromMap(YamlMap data, String version) {
@@ -57,13 +59,14 @@ class BuildConfig {
       web: platforms.containsKey("web") ? BuildConfigPlatform.fromMap(platforms["web"], TargetPlatform.web) : null,
       xcodeDerivedKey: data["xcodeDerivedDataPathEnvKey"],
       cleanFlutter: data["clean_flutter"] ?? true,
+      generateLog: data["generate_log"] ?? true,
       printstdout: data["print_stdout"] ?? false,
       timestamp: DateTime.now(),
       version: version,
     );
   }
 
-  String get logFile => ".flutter_build_pipe/$version/${timestamp.toIso8601String()}.log";
+  String get logFile => generateLog ? ".flutter_build_pipe/$version/${timestamp.toIso8601String()}.log" : "";
   bool get needXCodeDerivedCleaning => (ios != null || macos != null) && xcodeDerivedKey != null && xcodeDerivedKey!.isNotEmpty;
   List<TargetPlatform> get platforms => [
     if (ios != null) TargetPlatform.ios,
