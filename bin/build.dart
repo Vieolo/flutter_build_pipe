@@ -50,6 +50,17 @@ void main(List<String> args) async {
 
   await PipeBuilder.buildAll(config);
 
+  if (config.postBuildCommand != null && config.postBuildCommand!.isNotEmpty) {
+    await ProcessHelper.runCommandUsingConfig(
+      executable: config.postBuildCommand!.split(" ")[0],
+      arguments: config.postBuildCommand!.split(" ").sublist(1),
+      config: config,
+      startMessage: "\nRunning post-build command...",
+      successMessage: "√ post-build command is completed",
+      errorMessage: "X post-build command has failed",
+    );
+  }
+
   print("\nBuild is completed");
   if (config.generateLog) {
     print("log is generated at: ${config.logFile}");
