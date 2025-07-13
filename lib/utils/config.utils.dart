@@ -37,6 +37,7 @@ class BuildConfig {
   DateTime timestamp;
   String version;
   bool generateLog;
+  String? postBuildCommand;
 
   BuildConfig({
     this.android,
@@ -46,6 +47,7 @@ class BuildConfig {
     this.web,
     this.windows,
     this.xcodeDerivedKey,
+    this.postBuildCommand,
     required this.cleanFlutter,
     required this.printstdout,
     required this.timestamp,
@@ -66,6 +68,7 @@ class BuildConfig {
       cleanFlutter: data["clean_flutter"] ?? true,
       generateLog: data["generate_log"] ?? true,
       printstdout: data["print_stdout"] ?? false,
+      postBuildCommand: data["post_build_command"],
       timestamp: DateTime.now(),
       version: version,
     );

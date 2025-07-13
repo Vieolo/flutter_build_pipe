@@ -51,27 +51,32 @@ build_pipe:
   # Whether to print the output of the commands to the terminal as they are being run
   # optional -- default: false
   print_stdout: false
+  # The command that will be run after the all platforms have been
+  # built (successfully or not)
+  # This command will be executed as it's provided
+  # optional -- default: null
+  post_build_command: your post-build command # e.g. sh ./post-build.sh
   # The target platforms you wish to build for
   # required -- At least on platform should be added
   platforms:
     # Read below to know about the common and platform-specific properties of each platform object
     ios:
-      build_command: {your build command} # e.g. flutter build ipa
+      build_command: your build command # e.g. flutter build ipa
       ... # rest of properties explained below
     android:
-      build_command: {your build command} # e.g. flutter build appbundle
+      build_command: your build command # e.g. flutter build appbundle
       ... # rest of properties explained below
     macos:
-      build_command: {your build command} # e.g. flutter build macos
+      build_command: your build command # e.g. flutter build macos
       ... # rest of properties explained below
     windows:
-      build_command: {your build command} # e.g. flutter build windows
+      build_command: your build command # e.g. flutter build windows
       ... # rest of properties explained below
     linux:
-      build_command: {your build command} # e.g. flutter build linux
+      build_command: your build command # e.g. flutter build linux
       ... # rest of properties explained below
     web:
-      build_command: {your build command} # e.g. flutter build web
+      build_command: your build command # e.g. flutter build web
       ... # rest of properties explained below
 ```
 
@@ -85,7 +90,7 @@ common:
   # Full build command, e.g. flutter build ipa
   # The command is run as you provide it
   # required
-  build_command: {your build command}      
+  build_command: your build command      
 
 # These properties are only applicable to web
 web:
