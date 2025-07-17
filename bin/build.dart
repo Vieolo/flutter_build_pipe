@@ -63,6 +63,6 @@ void main(List<String> args) async {
 
   print("\nBuild is completed");
   if (config.generateLog) {
-    print("log is generated at: ${config.logFile}");
+    print("log is generated at: ${config.logFile}\n");
   }
 }
