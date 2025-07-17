@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:build_pipe/utils/config.utils.dart';
+import 'package:build_pipe/utils/console.utils.dart';
 
 class ProcessHelper {
   static Future<int> runCommand({
@@ -14,7 +15,7 @@ class ProcessHelper {
     bool exitIfError = true,
   }) async {
     if (startMessage != null && startMessage.isNotEmpty) {
-      print(startMessage);
+      Console.logInfo(startMessage);
     }
 
     // Handling the log file
@@ -53,7 +54,7 @@ class ProcessHelper {
 
     if (exitCode != 0) {
       if (errorMessage != null && errorMessage.isNotEmpty) {
-        print(errorMessage);
+        Console.logError(errorMessage);
       }
       if (exitIfError) {
         exit(exitCode);
@@ -61,7 +62,7 @@ class ProcessHelper {
     }
 
     if (successMessage != null && successMessage.isNotEmpty) {
-      print(successMessage);
+      Console.logSuccess(successMessage);
     }
 
     return exitCode;
