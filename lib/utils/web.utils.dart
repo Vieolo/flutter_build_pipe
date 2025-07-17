@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:build_pipe/utils/config.utils.dart';
+import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/log.utils.dart';
 import 'package:path/path.dart' as p;
 
@@ -59,25 +60,8 @@ class WebUtils {
       }
     }
 
-    print('Web cache busting complete.');
+    Console.logSuccess("√ Web cache busting complete.");
     logLines.addAll(LogUtils.getActionEndLines());
-
-    if (config.generateLog) {
-      File logFile = File(config.logFile);
-      IOSink? logSink;
-      bool alreadyExists = true;
-
-      if (!(await logFile.exists())) {
-        logFile = await File(config.logFile).create(recursive: true);
-        alreadyExists = false;
-      }
-
-      logSink = logFile.openWrite(mode: alreadyExists ? FileMode.append : FileMode.write);
-
-      for (var line in logLines) {
-        logSink.writeln(line);
-      }
-      await logSink.close();
-    }
+    LogUtils.appendLogUsingStringList(config, logLines);
   }
 }
