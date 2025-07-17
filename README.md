@@ -19,6 +19,9 @@ Build pipeline for building your Flutter app for different target platforms.
 - Specify platforms, build commands, and your preferences in `pubspec.yaml`
 - Logs the output of all build commands for future reviews
 
+#### iOS & macOS
+- optional clearing of XCode's derived data for consistent builds
+
 #### Web
 - Adds the version query paramter to build files post-build to solve the caching problem of Flutter web (e.g. `flutter_bootstrap.js?v=0.12.1`)
 
@@ -56,6 +59,11 @@ build_pipe:
   # This command will be executed as it's provided
   # optional -- default: null
   post_build_command: your post-build command # e.g. sh ./post-build.sh
+  # The environment variable pointing to the location
+  # of the derived data of XCode
+  # If provided, the derived data will be erased before iOS or macOS builds
+  # optional -- default: null
+  xcode_derived_data_path_env_key: YOUR_ENV_VAR_KEY_TO_XCODE
   # The target platforms you wish to build for
   # required -- At least on platform should be added
   platforms:
@@ -138,6 +146,25 @@ If you run `build_pipe:build` with the same version multiple times, the previous
 
 Add `.flutter_build_pipe/` to your `.gitignore` for git to ignore this folder.
 
+
+## iOS & macOS builds
+
+#### Clearing XCode derived data
+The derived data of XCode holds some cache of your dependencies and clearing it before the production build, will result in a more consistent output. Note that clearing the derived data will result in a longer build time.
+
+To delete the derived data before the builds, create an environmental variable (name it as you wish, e.g. `XCODE_DERIVED_PATH`) with the path pointing to your derived data location. You can find out the location the derived data in `XCode > Settings > Locations`.
+
+```bash
+export XCODE_DERIVED_PATH=/path/to/derived/data
+```
+
+Once set, write the name of the env variable in your `build_pipe` config. for example:
+
+```yaml
+xcode_derived_data_path_env_key: XCODE_DERIVED_PATH
+```
+
+Once passed, the derived data will be erased before a build run.
 
 ## Web builds
 

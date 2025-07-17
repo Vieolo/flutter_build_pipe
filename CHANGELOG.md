@@ -1,3 +1,9 @@
+## 0.1.2
+
+2025-07-17
+- Added the `xcode_derived_data_path_env_key` property to the config which is the name of the environmental variable having the path to XCode derived data as value.
+- Improved the printing of the text to the terminal
+
 ## 0.1.1
 
 2025-07-13
