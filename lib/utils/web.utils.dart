@@ -62,6 +62,6 @@ class WebUtils {
 
     Console.logSuccess("√ Web cache busting complete.");
     logLines.addAll(LogUtils.getActionEndLines());
-    LogUtils.appendLogUsingStringList(config, logLines);
+    await LogUtils.appendLogUsingStringList(config, logLines);
   }
 }
