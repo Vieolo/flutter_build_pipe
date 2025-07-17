@@ -1,3 +1,8 @@
+## 0.1.3
+
+2025-07-17
+- Fixed the race condition for logging the web cache bust
+
 ## 0.1.2
 
 2025-07-17
