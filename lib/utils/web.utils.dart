@@ -1,16 +1,12 @@
 import 'dart:io';
 
 import 'package:build_pipe/utils/config.utils.dart';
+import 'package:build_pipe/utils/log.utils.dart';
 import 'package:path/path.dart' as p;
 
 class WebUtils {
   static Future<void> applyCacheBustPostBuild(BuildConfig config) async {
-    List<String> logLines = [
-      "** action start ********************",
-      "-- Running : Applying web cache busting for version: ${config.version}",
-      "-- Time    : ${DateTime.now().toIso8601String()}",
-      "-- detail start ---------------------",
-    ];
+    List<String> logLines = LogUtils.getActionStartLines("Applying web cache busting for version: ${config.version}");
 
     print('Applying web cache busting for version: ${config.version}');
 
@@ -64,10 +60,7 @@ class WebUtils {
     }
 
     print('Web cache busting complete.');
-    logLines.addAll([
-      "\n-- detail end -----------------------",
-      "** action end **********************\n\n",
-    ]);
+    logLines.addAll(LogUtils.getActionEndLines());
 
     if (config.generateLog) {
       File logFile = File(config.logFile);
