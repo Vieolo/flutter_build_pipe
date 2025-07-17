@@ -64,7 +64,7 @@ class BuildConfig {
       linux: platforms.containsKey("linux") ? BuildConfigPlatform.fromMap(platforms["linux"], TargetPlatform.linux) : null,
       windows: platforms.containsKey("windows") ? BuildConfigPlatform.fromMap(platforms["windows"], TargetPlatform.windows) : null,
       web: platforms.containsKey("web") ? BuildConfigPlatform.fromMap(platforms["web"], TargetPlatform.web) : null,
-      xcodeDerivedKey: data["xcodeDerivedDataPathEnvKey"],
+      xcodeDerivedKey: data["xcode_derived_data_path_env_key"],
       cleanFlutter: data["clean_flutter"] ?? true,
       generateLog: data["generate_log"] ?? true,
       printstdout: data["print_stdout"] ?? false,
