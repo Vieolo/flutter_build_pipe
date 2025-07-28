@@ -6,27 +6,30 @@ import 'package:build_pipe/utils/log.utils.dart';
 import 'package:path/path.dart' as p;
 
 class WebUtils {
+  static String _getFilePath(String fp) {
+    return p.join(Directory.current.path, "build", "web", fp);
+  }
+
   static Future<void> applyCacheBustPostBuild(BuildConfig config) async {
     List<String> logLines = LogUtils.getActionStartLines("Applying web cache busting for version: ${config.version}");
 
     print('Applying web cache busting for version: ${config.version}');
 
-    final String buildWebPath = "./build/web";
     (String, String) mainDartJSPattern = (r'main\.dart\.js', "main.dart.js?v=${config.version}");
 
     // Files to be modified
     // Each file has a list of records, the first item is the regex and the second is the replacement
     final Map<String, List<(String, String)>> filesToPatch = {
-      p.join(buildWebPath, 'flutter.js'): [
+      WebUtils._getFilePath('flutter.js'): [
         mainDartJSPattern,
       ],
-      p.join(buildWebPath, 'flutter_bootstrap.js'): [
+      WebUtils._getFilePath('flutter_bootstrap.js'): [
         mainDartJSPattern,
       ],
-      p.join(buildWebPath, 'main.dart.js'): [
+      WebUtils._getFilePath('main.dart.js'): [
         (r'window\.fetch\(a\),', "window.fetch(a + '?v=${config.version}'),"),
       ],
-      p.join(buildWebPath, 'index.html'): [
+      WebUtils._getFilePath('index.html'): [
         (r'manifest\.json', 'manifest.json?v=${config.version}'),
         (r'flutter_bootstrap\.js', "flutter_bootstrap.js?v=${config.version}"),
       ],
