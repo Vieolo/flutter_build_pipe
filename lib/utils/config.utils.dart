@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:yaml/yaml.dart';
+import 'package:path/path.dart' as p;
 
 enum TargetPlatform { web, ios, android, macos, windows, linux }
 
@@ -74,7 +77,7 @@ class BuildConfig {
     );
   }
 
-  String get logFile => generateLog ? ".flutter_build_pipe/logs/$version/${timestamp.toIso8601String()}.log" : "";
+  String get logFile => generateLog ? p.join(Directory.current.path, ".flutter_build_pipe", "logs", version, "${timestamp.toIso8601String()}.log") : "";
   bool get needXCodeDerivedCleaning => (ios != null || macos != null) && xcodeDerivedKey != null && xcodeDerivedKey!.isNotEmpty;
   List<TargetPlatform> get platforms => [
     if (ios != null) TargetPlatform.ios,
