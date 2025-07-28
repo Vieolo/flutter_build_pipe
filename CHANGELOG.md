@@ -1,3 +1,8 @@
+## 0.1.4
+
+2025-07-28
+- Fixed the local paths on windows and linux
+
 ## 0.1.3
 
 2025-07-17
