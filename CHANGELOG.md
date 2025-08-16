@@ -1,3 +1,10 @@
+## 0.1.5
+
+2025-08-16
+- Added example
+- Adjusted docs
+- Confirmed the web caching for `Flutter v3.35.1`
+
 ## 0.1.4
 
 2025-07-28
