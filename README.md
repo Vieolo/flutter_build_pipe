@@ -174,6 +174,8 @@ The Flutter web builds, unlike more mature frontend frameworks, do not generate 
 To circumvent this, `build_pipe` will adjust your build files to append a query paramter with your application's version. Our solution is highly inspired by [github.com/doonfrs
 flutter-build-web-cache-problem](https://github.com/doonfrs/flutter-build-web-cache-problem).
 
-Please note that our approach is fragile by nature since it depends on the generated Flutter code which may change by a new update. At the time of writing, our code is made for and tested on `Flutter v3.32.5`
+Please note that our approach is fragile by nature since it depends on the generated Flutter code which may change by a new update. At the time of writing, our code is tested on the following Flutter versions:
+  - `Flutter v3.32.5`
+  - `Flutter v3.35.1`
 
 You can prevent this by setting the `add_version_query_param` field in your web platform to `false`

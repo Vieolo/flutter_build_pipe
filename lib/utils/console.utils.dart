@@ -1,3 +1,4 @@
+/// Handles the printing to the terminal
 class Console {
   /// Prints the `obj` to the terminal
   ///
@@ -7,18 +8,25 @@ class Console {
     print(obj?.toString() ?? "");
   }
 
+  /// Logs a text in red
   static void logError(String message) {
     Console.log("\u001b[31;1m$message\u001b[0m");
   }
 
+  /// Logs a text in green
   static void logSuccess(String message) {
     Console.log("\u001b[32;1m$message\u001b[0m");
   }
 
-  static void logWarning(String message, [bool skipWhileIntegrationTest = true]) {
+  /// Logs a text in yello
+  static void logWarning(
+    String message, [
+    bool skipWhileIntegrationTest = true,
+  ]) {
     Console.log("\u001b[33;1m$message\u001b[0m");
   }
 
+  /// Logs a text in white
   static void logInfo(String message, [bool skipWhileIntegrationTest = true]) {
     Console.log("\u001b[37;1m$message\u001b[0m");
   }
