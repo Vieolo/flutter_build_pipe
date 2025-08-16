@@ -5,17 +5,30 @@ import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/log.utils.dart';
 import 'package:path/path.dart' as p;
 
+/// The utility class for handling web specific functionalities
 class WebUtils {
+  /// Gets the path of a given file in the `build` folder
   static String _getFilePath(String fp) {
     return p.join(Directory.current.path, "build", "web", fp);
   }
 
+  /// This function modifies the build output of the Flutter web
+  ///
+  /// Flutter has no built-in method to bust certain caches, so, this function will
+  /// add the version number to some paths. e.g. `main.dart.js?v=0.12.3`
+  ///
+  /// By adding the version number, the browser will re-fetch the files again
   static Future<void> applyCacheBustPostBuild(BuildConfig config) async {
-    List<String> logLines = LogUtils.getActionStartLines("Applying web cache busting for version: ${config.version}");
+    List<String> logLines = LogUtils.getActionStartLines(
+      "Applying web cache busting for version: ${config.version}",
+    );
 
     print('Applying web cache busting for version: ${config.version}');
 
-    (String, String) mainDartJSPattern = (r'main\.dart\.js', "main.dart.js?v=${config.version}");
+    (String, String) mainDartJSPattern = (
+      r'main\.dart\.js',
+      "main.dart.js?v=${config.version}",
+    );
 
     // Files to be modified
     // Each file has a list of records, the first item is the regex and the second is the replacement
@@ -47,7 +60,9 @@ class WebUtils {
               RegExp(single.value[i].$1, caseSensitive: false),
               single.value[i].$2,
             );
-            ll.add("[replacement] > ${single.value[i].$1} to ${single.value[i].$2}");
+            ll.add(
+              "[replacement] > ${single.value[i].$1} to ${single.value[i].$2}",
+            );
           }
           await file.writeAsString(content);
           logLines.addAll(ll);
@@ -59,7 +74,9 @@ class WebUtils {
       } else {
         print('File not found: ${p.basename(single.key)}');
         logLines.add("\n[file] > ${single.key}");
-        logLines.add("[error] > This file could not be found: ${p.basename(single.key)}");
+        logLines.add(
+          "[error] > This file could not be found: ${p.basename(single.key)}",
+        );
       }
     }
 
