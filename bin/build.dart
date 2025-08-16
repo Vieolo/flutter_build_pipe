@@ -7,6 +7,7 @@ import 'package:build_pipe/utils/process.utils.dart';
 import 'package:build_pipe/utils/xcode.utils.dart';
 import 'package:yaml/yaml.dart' as yaml;
 
+/// Main entry point of the `dart run build_pipe:build` command
 void main(List<String> args) async {
   final rawPubspecFile = File('pubspec.yaml');
   if (!(await rawPubspecFile.exists())) {

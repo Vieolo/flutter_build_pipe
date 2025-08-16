@@ -2,7 +2,10 @@ import 'dart:io';
 
 import 'package:build_pipe/utils/config.utils.dart';
 
+/// Utility class for generating the log files
 class LogUtils {
+  /// The starting lines of an action to be added to the log file
+  /// The output will include the name and time of the action
   static List<String> getActionStartLines(String action) {
     return [
       "** action start ********************",
@@ -12,6 +15,7 @@ class LogUtils {
     ];
   }
 
+  /// The ending lines of an action to be added to the log file
   static List<String> getActionEndLines() {
     return [
       "\n-- detail end -----------------------",
@@ -19,6 +23,7 @@ class LogUtils {
     ];
   }
 
+  /// Takes a list of lines and appends it to the log file
   static Future<void> appendLogUsingStringList(BuildConfig config, List<String> logLines) async {
     if (!config.generateLog) return;
 

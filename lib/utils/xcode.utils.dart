@@ -4,7 +4,10 @@ import 'package:build_pipe/utils/config.utils.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/log.utils.dart';
 
+/// Utility class for XCode specific functionalities
 class XCodeUtils {
+  /// This function deletes the derived data of the XCode before the build
+  /// to prevent faulty caches affecting the production build
   static Future<bool> deleteDerivedData(BuildConfig config, String derivedPath) async {
     bool deleted = false;
     List<String> logLines = LogUtils.getActionStartLines("Deleting the derived data of XCode");

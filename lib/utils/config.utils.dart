@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:yaml/yaml.dart';
 import 'package:path/path.dart' as p;
 
+/// The platforms the application will be built for
 enum TargetPlatform { web, ios, android, macos, windows, linux }
 
+/// The class responsible for hold and parsing the user provided config
 class BuildConfigPlatform {
   // General
   TargetPlatform platform;
@@ -15,6 +17,7 @@ class BuildConfigPlatform {
 
   BuildConfigPlatform({required this.platform, required this.buildCommand, this.addVersionQueryParam});
 
+  /// Parses a map to `BuildConfigPlatform`
   static BuildConfigPlatform? fromMap(YamlMap data, TargetPlatform platform) {
     if (!data.containsKey("build_command") || data["build_command"].toString().isEmpty) {
       return null;
@@ -27,6 +30,7 @@ class BuildConfigPlatform {
   }
 }
 
+/// The actual class holding the fields of the config
 class BuildConfig {
   BuildConfigPlatform? web;
   BuildConfigPlatform? ios;
@@ -58,6 +62,7 @@ class BuildConfig {
     required this.generateLog,
   });
 
+  /// Parsed the config from the map
   factory BuildConfig.fromMap(YamlMap data, String version) {
     YamlMap platforms = data["platforms"] ?? {};
     return BuildConfig(
@@ -77,8 +82,13 @@ class BuildConfig {
     );
   }
 
+  /// Gets the path of the log file, if log generation is not prevented via the config
   String get logFile => generateLog ? p.join(Directory.current.path, ".flutter_build_pipe", "logs", version, "${timestamp.toIso8601String()}.log") : "";
+
+  /// Checks if the XCode derived data is provided AND there is a build target for Apple devices
   bool get needXCodeDerivedCleaning => (ios != null || macos != null) && xcodeDerivedKey != null && xcodeDerivedKey!.isNotEmpty;
+
+  /// The list of target platforms provided in the config
   List<TargetPlatform> get platforms => [
     if (ios != null) TargetPlatform.ios,
     if (android != null) TargetPlatform.android,

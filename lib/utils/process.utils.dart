@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:build_pipe/utils/config.utils.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 
+/// The helper class for running commands
 class ProcessHelper {
+  /// Runs a given command and handles the logging
   static Future<int> runCommand({
     required String executable,
     required List<String> arguments,
@@ -68,6 +70,10 @@ class ProcessHelper {
     return exitCode;
   }
 
+  /// Calls the `runCommand` function of this class
+  /// under the hood but instead of taking all the
+  /// arguments, it uses the user provided config to
+  /// pass the necessary arguments
   static Future<int> runCommandUsingConfig({
     required String executable,
     required List<String> arguments,
