@@ -19,7 +19,10 @@ class Console {
   }
 
   /// Logs a text in yello
-  static void logWarning(String message, [bool skipWhileIntegrationTest = true]) {
+  static void logWarning(
+    String message, [
+    bool skipWhileIntegrationTest = true,
+  ]) {
     Console.log("\u001b[33;1m$message\u001b[0m");
   }
 

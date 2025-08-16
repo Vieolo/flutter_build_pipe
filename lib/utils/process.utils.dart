@@ -31,7 +31,9 @@ class ProcessHelper {
         alreadyExists = false;
       }
 
-      logSink = logFile.openWrite(mode: alreadyExists ? FileMode.append : FileMode.write);
+      logSink = logFile.openWrite(
+        mode: alreadyExists ? FileMode.append : FileMode.write,
+      );
       logSink.writeln("** command start ********************");
       logSink.writeln("-- Running : $executable ${arguments.join(" ")}");
       logSink.writeln("-- Time    : ${DateTime.now().toIso8601String()}");

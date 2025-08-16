@@ -7,7 +7,11 @@ import 'package:build_pipe/utils/web.utils.dart';
 class PipeBuilder {
   /// The actual function running the build command
   /// This function is private and is called via platform specific interface
-  static Future<int> _runBuildCommand(BuildConfig config, BuildConfigPlatform platformConfig, String userfacingPlatform) async {
+  static Future<int> _runBuildCommand(
+    BuildConfig config,
+    BuildConfigPlatform platformConfig,
+    String userfacingPlatform,
+  ) async {
     return await ProcessHelper.runCommandUsingConfig(
       executable: platformConfig.buildCommand.split(" ")[0],
       arguments: platformConfig.buildCommand.split(" ").sublist(1),

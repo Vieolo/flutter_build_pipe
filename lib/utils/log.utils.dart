@@ -24,7 +24,10 @@ class LogUtils {
   }
 
   /// Takes a list of lines and appends it to the log file
-  static Future<void> appendLogUsingStringList(BuildConfig config, List<String> logLines) async {
+  static Future<void> appendLogUsingStringList(
+    BuildConfig config,
+    List<String> logLines,
+  ) async {
     if (!config.generateLog) return;
 
     File logFile = File(config.logFile);
@@ -36,7 +39,9 @@ class LogUtils {
       alreadyExists = false;
     }
 
-    logSink = logFile.openWrite(mode: alreadyExists ? FileMode.append : FileMode.write);
+    logSink = logFile.openWrite(
+      mode: alreadyExists ? FileMode.append : FileMode.write,
+    );
 
     for (var line in logLines) {
       logSink.writeln(line);

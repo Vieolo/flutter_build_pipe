@@ -8,9 +8,14 @@ import 'package:build_pipe/utils/log.utils.dart';
 class XCodeUtils {
   /// This function deletes the derived data of the XCode before the build
   /// to prevent faulty caches affecting the production build
-  static Future<bool> deleteDerivedData(BuildConfig config, String derivedPath) async {
+  static Future<bool> deleteDerivedData(
+    BuildConfig config,
+    String derivedPath,
+  ) async {
     bool deleted = false;
-    List<String> logLines = LogUtils.getActionStartLines("Deleting the derived data of XCode");
+    List<String> logLines = LogUtils.getActionStartLines(
+      "Deleting the derived data of XCode",
+    );
     Console.logInfo("\nDeleting the XCode derived data...");
 
     var dir = Directory(derivedPath);
@@ -19,7 +24,9 @@ class XCodeUtils {
         "\n[error] The given path for XCode is invalid",
         "[path] $derivedPath\n",
       ]);
-      Console.logError("The given path for XCode derived data is invalid -> $derivedPath");
+      Console.logError(
+        "The given path for XCode derived data is invalid -> $derivedPath",
+      );
     } else {
       try {
         dir.deleteSync(recursive: true);
@@ -34,7 +41,9 @@ class XCodeUtils {
           "\n[error] ${e.toString()}",
           "[path] $derivedPath\n",
         ]);
-        Console.logError("There was an error deleting the derived data -> ${e.toString()}");
+        Console.logError(
+          "There was an error deleting the derived data -> ${e.toString()}",
+        );
       }
     }
 
