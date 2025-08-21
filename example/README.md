@@ -34,4 +34,5 @@ build_pipe:
     web:
       build_command: flutter build web
       add_version_query_param: true
+      query_param_versioning_type: hash
 ```
