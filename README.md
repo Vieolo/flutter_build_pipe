@@ -107,8 +107,22 @@ web:
     # while trying to access the generated static files
     # e.g. `flutter_bootstrap.js?v=0.12.1`
     # This action will be performed after the Flutter's default build
-    # optiona -- default: true
+    # optional -- default: true
     add_version_query_param: true
+    
+    # This field determines the type of text to be used as
+    # the query param to bust the cache
+    # There are two options: `hash` and `semver`
+    #
+    # If hash, a random hash is used which will bust the cache
+    # on every build. e.g. `?v=1kjdghsflkdh`
+    #
+    # If semver, the version of your application is used. This means
+    # that unless you increment the version, the cache
+    # won't be bust. e.g. `?v=0.12.3`
+    #
+    # optional -- default: hash
+    query_param_versioning_type: hash
 
 # These properties are only applicable to iOS
 ios:
@@ -171,8 +185,14 @@ Once passed, the derived data will be erased before a build run.
 #### Cache busting
 The Flutter web builds, unlike more mature frontend frameworks, do not generate static files with unique URIs. As the result, the Flutter web apps are cached by the browser, practically preventing you from pushing an update to your existing users. You can read more about it [here](https://docs.flutter.dev/platform-integration/web/faq#why-doesnt-my-app-update-immediately-after-its-deployed)
 
-To circumvent this, `build_pipe` will adjust your build files to append a query paramter with your application's version. Our solution is highly inspired by [github.com/doonfrs
+To circumvent this, `build_pipe` will adjust your build files to append a query paramter with either a random hash or your application's version. Our solution is highly inspired by [github.com/doonfrs
 flutter-build-web-cache-problem](https://github.com/doonfrs/flutter-build-web-cache-problem).
+
+`build_pipe` can either add a random hash or the version number of your app as the query param. You can select the type of query param using `query_param_versioning_type`. This value is set to `hash` by default.
+
+If `hash` is selected, a random hash is used on every build which means the browser will refetch the files on every build. A reproducible hash is currently not feasible as Flutter's output is slightly different on every build.
+
+If `semver` is selected as the query param type, you are in control of the cache busting, as it relies on you, incrementing the version.
 
 Please note that our approach is fragile by nature since it depends on the generated Flutter code which may change by a new update. At the time of writing, our code is tested on the following Flutter versions:
   - `Flutter v3.32.5`

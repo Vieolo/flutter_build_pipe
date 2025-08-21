@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:build_pipe/utils/config.utils.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/log.utils.dart';
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
 /// The utility class for handling web specific functionalities
@@ -19,15 +21,17 @@ class WebUtils {
   ///
   /// By adding the version number, the browser will re-fetch the files again
   static Future<void> applyCacheBustPostBuild(BuildConfig config) async {
-    List<String> logLines = LogUtils.getActionStartLines(
-      "Applying web cache busting for version: ${config.version}",
-    );
+    WebVersioningType versioningType = config.web?.webVersioningType ?? WebVersioningType.hash;
+    String introText = versioningType.isHash ? "Applying web cache busting" : "Applying web cache busting for version: ${config.version}";
 
-    print('Applying web cache busting for version: ${config.version}');
+    List<String> logLines = LogUtils.getActionStartLines(introText);
+    print(introText);
+
+    String vValue = versioningType.isHash ? md5.convert(utf8.encode(DateTime.now().toIso8601String())).toString() : config.version;
 
     (String, String) mainDartJSPattern = (
       r'main\.dart\.js',
-      "main.dart.js?v=${config.version}",
+      "main.dart.js?v=$vValue",
     );
 
     // Files to be modified
@@ -40,11 +44,11 @@ class WebUtils {
         mainDartJSPattern,
       ],
       WebUtils._getFilePath('main.dart.js'): [
-        (r'window\.fetch\(a\),', "window.fetch(a + '?v=${config.version}'),"),
+        (r'window\.fetch\(a\),', "window.fetch(a + '?v=$vValue'),"),
       ],
       WebUtils._getFilePath('index.html'): [
-        (r'manifest\.json', 'manifest.json?v=${config.version}'),
-        (r'flutter_bootstrap\.js', "flutter_bootstrap.js?v=${config.version}"),
+        (r'manifest\.json', 'manifest.json?v=$vValue'),
+        (r'flutter_bootstrap\.js', "flutter_bootstrap.js?v=$vValue"),
       ],
     };
 
