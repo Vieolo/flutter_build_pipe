@@ -6,6 +6,20 @@ import 'package:path/path.dart' as p;
 /// The platforms the application will be built for
 enum TargetPlatform { web, ios, android, macos, windows, linux }
 
+enum WebVersioningType {
+  semver,
+  hash;
+
+  static WebVersioningType getByName(String? n) {
+    return WebVersioningType.values.firstWhere(
+      (z) => z.name == n,
+      orElse: () => WebVersioningType.hash,
+    );
+  }
+
+  bool get isHash => this == WebVersioningType.hash;
+}
+
 /// The class responsible for hold and parsing the user provided config
 class BuildConfigPlatform {
   // General
@@ -14,25 +28,25 @@ class BuildConfigPlatform {
 
   // Web specific
   bool? addVersionQueryParam;
+  WebVersioningType? webVersioningType;
 
   BuildConfigPlatform({
     required this.platform,
     required this.buildCommand,
     this.addVersionQueryParam,
+    this.webVersioningType,
   });
 
   /// Parses a map to `BuildConfigPlatform`
   static BuildConfigPlatform? fromMap(YamlMap data, TargetPlatform platform) {
-    if (!data.containsKey("build_command") ||
-        data["build_command"].toString().isEmpty) {
+    if (!data.containsKey("build_command") || data["build_command"].toString().isEmpty) {
       return null;
     }
     return BuildConfigPlatform(
       platform: platform,
       buildCommand: data["build_command"],
-      addVersionQueryParam: platform == TargetPlatform.web
-          ? (data['add_version_query_param'] ?? true)
-          : null,
+      addVersionQueryParam: platform == TargetPlatform.web ? (data['add_version_query_param'] ?? true) : null,
+      webVersioningType: platform == TargetPlatform.web ? WebVersioningType.getByName(data['query_param_versioning_type']) : null,
     );
   }
 }
@@ -79,9 +93,7 @@ class BuildConfig {
               TargetPlatform.android,
             )
           : null,
-      ios: platforms.containsKey("ios")
-          ? BuildConfigPlatform.fromMap(platforms["ios"], TargetPlatform.ios)
-          : null,
+      ios: platforms.containsKey("ios") ? BuildConfigPlatform.fromMap(platforms["ios"], TargetPlatform.ios) : null,
       macos: platforms.containsKey("macos")
           ? BuildConfigPlatform.fromMap(
               platforms["macos"],
@@ -100,9 +112,7 @@ class BuildConfig {
               TargetPlatform.windows,
             )
           : null,
-      web: platforms.containsKey("web")
-          ? BuildConfigPlatform.fromMap(platforms["web"], TargetPlatform.web)
-          : null,
+      web: platforms.containsKey("web") ? BuildConfigPlatform.fromMap(platforms["web"], TargetPlatform.web) : null,
       xcodeDerivedKey: data["xcode_derived_data_path_env_key"],
       cleanFlutter: data["clean_flutter"] ?? true,
       generateLog: data["generate_log"] ?? true,
@@ -125,10 +135,7 @@ class BuildConfig {
       : "";
 
   /// Checks if the XCode derived data is provided AND there is a build target for Apple devices
-  bool get needXCodeDerivedCleaning =>
-      (ios != null || macos != null) &&
-      xcodeDerivedKey != null &&
-      xcodeDerivedKey!.isNotEmpty;
+  bool get needXCodeDerivedCleaning => (ios != null || macos != null) && xcodeDerivedKey != null && xcodeDerivedKey!.isNotEmpty;
 
   /// The list of target platforms provided in the config
   List<TargetPlatform> get platforms => [

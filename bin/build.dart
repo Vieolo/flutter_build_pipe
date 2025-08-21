@@ -36,7 +36,9 @@ void main(List<String> args) async {
 
   Console.logInfo("\nStarting the build process...\n");
   print("The following target platforms are detected:");
-  print("${config.platforms.map((z) => z.name).join(", ")}\n");
+  for (var i = 0; i < config.platforms.length; i++) {
+    print("|-- ${config.platforms[i].name}${i == config.platforms.length - 1 ? "\n" : ""}");
+  }
 
   if (config.xcodeDerivedKey != null &&
       config.xcodeDerivedKey!.isNotEmpty &&
