@@ -1,8 +1,13 @@
+## 0.2.1
+
+2025-09-08
+- Fixed the log file on windows
+
 ## 0.2.0
 
 2025-08-21
-Breaking change:
-The default behavior of web cache busting is changed. Previously, to bust the cache, we used the appliation's version. e.g. `?v=0.12.3`. Now, the default behavior is adding a random hash to bust the cache on every build. You can control the behvavior using the `query_param_versioning_type` field of web.
+
+**Breaking change**: The default behavior of web cache busting is changed. Previously, to bust the cache, we used the appliation's version. e.g. `?v=0.12.3`. Now, the default behavior is adding a random hash to bust the cache on every build. You can control the behvavior using the `query_param_versioning_type` field of web.
 
 ## 0.1.5
 
