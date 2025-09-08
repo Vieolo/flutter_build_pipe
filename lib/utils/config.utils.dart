@@ -124,15 +124,25 @@ class BuildConfig {
   }
 
   /// Gets the path of the log file, if log generation is not prevented via the config
-  String get logFile => generateLog
-      ? p.join(
-          Directory.current.path,
-          ".flutter_build_pipe",
-          "logs",
-          version,
-          "${timestamp.toIso8601String()}.log",
-        )
-      : "";
+  String get logFile {
+    String fileName = "${timestamp.toIso8601String()}.log";
+
+    // In windows, it seems that, the file name cannot
+    // contain `:`
+    if (Platform.isWindows) {
+      fileName = fileName.replaceAll(":", "_");
+    }
+
+    return generateLog
+        ? p.join(
+            Directory.current.path,
+            ".flutter_build_pipe",
+            "logs",
+            version,
+            fileName,
+          )
+        : "";
+  }
 
   /// Checks if the XCode derived data is provided AND there is a build target for Apple devices
   bool get needXCodeDerivedCleaning => (ios != null || macos != null) && xcodeDerivedKey != null && xcodeDerivedKey!.isNotEmpty;
