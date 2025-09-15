@@ -3,10 +3,21 @@ import 'dart:io';
 import 'package:build_pipe/utils/config.utils.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 
+String _redact(String output, List<String>? redactions) {
+  if (redactions == null || redactions.isEmpty) return output;
+
+  String o = output;
+
+  for (var red in redactions) {
+    o = o.replaceAll(red, "REDACTED");
+  }
+  return o;
+}
+
 /// The helper class for running commands
 class ProcessHelper {
   /// Runs a given command and handles the logging
-  static Future<int> runCommand({
+  static Future<(int, List<String>)> runCommand({
     required String executable,
     required List<String> arguments,
     bool stdoutWrite = false,
@@ -15,6 +26,7 @@ class ProcessHelper {
     String? successMessage,
     String? errorMessage,
     bool exitIfError = true,
+    List<String>? redactions,
   }) async {
     if (startMessage != null && startMessage.isNotEmpty) {
       Console.logInfo(startMessage);
@@ -24,6 +36,7 @@ class ProcessHelper {
     File? logFile;
     IOSink? logSink;
     bool alreadyExists = true;
+    List<String> rawOutput = [];
     if (logFilePath != null && logFilePath.isNotEmpty) {
       logFile = File(logFilePath);
       if (!(await logFile.exists())) {
@@ -35,7 +48,7 @@ class ProcessHelper {
         mode: alreadyExists ? FileMode.append : FileMode.write,
       );
       logSink.writeln("** command start ********************");
-      logSink.writeln("-- Running : $executable ${arguments.join(" ")}");
+      logSink.writeln(_redact("-- Running : $executable ${arguments.join(" ")}", redactions));
       logSink.writeln("-- Time    : ${DateTime.now().toIso8601String()}");
       logSink.writeln("-- output start ---------------------\n");
     }
@@ -45,8 +58,9 @@ class ProcessHelper {
         stdout.write(z);
       }
       if (logSink != null) {
-        logSink.write(z);
+        logSink.write(_redact(z, redactions));
       }
+      rawOutput.add(z);
     });
     int exitCode = await process.exitCode;
     if (logSink != null) {
@@ -65,18 +79,18 @@ class ProcessHelper {
       }
     }
 
-    if (successMessage != null && successMessage.isNotEmpty) {
+    if (exitCode == 0 && successMessage != null && successMessage.isNotEmpty) {
       Console.logSuccess(successMessage);
     }
 
-    return exitCode;
+    return (exitCode, rawOutput);
   }
 
   /// Calls the `runCommand` function of this class
   /// under the hood but instead of taking all the
   /// arguments, it uses the user provided config to
   /// pass the necessary arguments
-  static Future<int> runCommandUsingConfig({
+  static Future<(int, List<String>)> runCommandUsingConfig({
     required String executable,
     required List<String> arguments,
     required BuildConfig config,
@@ -84,6 +98,7 @@ class ProcessHelper {
     String? successMessage,
     String? errorMessage,
     bool exitIfError = true,
+    List<String>? redactions,
   }) async {
     return await runCommand(
       executable: executable,
@@ -94,6 +109,7 @@ class ProcessHelper {
       exitIfError: exitIfError,
       startMessage: startMessage,
       successMessage: successMessage,
+      redactions: redactions,
     );
   }
 }

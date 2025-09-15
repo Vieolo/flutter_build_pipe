@@ -5,34 +5,10 @@ import 'package:build_pipe/utils/config.utils.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/process.utils.dart';
 import 'package:build_pipe/utils/xcode.utils.dart';
-import 'package:yaml/yaml.dart' as yaml;
 
 /// Main entry point of the `dart run build_pipe:build` command
 void main(List<String> args) async {
-  final rawPubspecFile = File('pubspec.yaml');
-  if (!(await rawPubspecFile.exists())) {
-    Console.logError("pubspec.yaml file could not be found!");
-    return;
-  }
-
-  final pubspec = yaml.loadYaml(await rawPubspecFile.readAsString());
-  if (!(pubspec as yaml.YamlMap).containsKey("build_pipe")) {
-    Console.logError(
-      "please add the build_pipe configuration to your pubspec file!",
-    );
-    return;
-  }
-
-  final config = BuildConfig.fromMap(
-    pubspec["build_pipe"],
-    pubspec["version"].split("+")[0],
-  );
-  if (config.platforms.isEmpty) {
-    Console.logError(
-      "No target platforms were detected. Please add your target platforms to pubspec",
-    );
-    return;
-  }
+  BuildConfig config = await BuildConfig.readPubspec();
 
   Console.logInfo("\nStarting the build process...\n");
   print("The following target platforms are detected:");

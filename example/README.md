@@ -23,6 +23,12 @@ build_pipe:
   platforms:
     ios:
       build_command: flutter build ipa
+      publish:
+        keyID: IOS_APP_KEY_ID # the env variable key
+        issuerID: IOS_APP_ISSUER_ID # the env variable key
+        appAppleID: IOS_APP_APPLE_ID # the env variable key
+        bundleID: com.example.yourapp
+        outputFilePath: build/ios/ipa/yourapp.ipa
     android:
       build_command: flutter build appbundle
     macos:

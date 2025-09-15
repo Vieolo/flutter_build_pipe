@@ -7,7 +7,7 @@ import 'package:build_pipe/utils/web.utils.dart';
 class PipeBuilder {
   /// The actual function running the build command
   /// This function is private and is called via platform specific interface
-  static Future<int> _runBuildCommand(
+  static Future<(int, List<String>)> _runBuildCommand(
     BuildConfig config,
     BuildConfigPlatform platformConfig,
     String userfacingPlatform,
