@@ -45,14 +45,14 @@ Read the topics below to setup and configure your project. The configuration is 
 ## Topics
 
 #### Install & Setup
-- [Install & Setup](https://github.com/Vieolo/flutter_build_pipe/blob/master/docs/install/install_intro.md)
+- [Install & Setup](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/install/install_intro.md)
 
 #### Platform Specific config and explanations
-- [iOS & macOS](https://github.com/Vieolo/flutter_build_pipe/blob/master/docs/apple/apple_intro.md)
-- [Web](https://github.com/Vieolo/flutter_build_pipe/blob/master/docs/web/web_intro.md)
-- [Android](https://github.com/Vieolo/flutter_build_pipe/blob/master/docs/android/android_intro.md)
-- [Windows](https://github.com/Vieolo/flutter_build_pipe/blob/master/docs/windows/windows_intro.md)
-- [Linux](https://github.com/Vieolo/flutter_build_pipe/blob/master/docs/linux/linux_intro.md)
+- [iOS & macOS](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/apple/apple_intro.md)
+- [Web](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/web/web_intro.md)
+- [Android](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/android/android_intro.md)
+- [Windows](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/windows/windows_intro.md)
+- [Linux](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/linux/linux_intro.md)
 
 #### Misc.
-- [Logging](https://github.com/Vieolo/flutter_build_pipe/blob/master/docs/logging/logging_intro.md)
+- [Logging](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/logging/logging_intro.md)

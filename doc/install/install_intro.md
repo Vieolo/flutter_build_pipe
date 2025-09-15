@@ -110,7 +110,7 @@ ios:
     # its fields are required
     #
     # To learn how to setup the iOS publish, have a
-    # look at [this page](docs/publish/publish_ios.md)
+    # look at [this page](doc/publish/publish_ios.md)
     #
     # optional
     publish:
