@@ -1,3 +1,9 @@
+## 0.2.2
+
+2025-09-15
+- Added the publish feature for iOS
+- Restructured the docs
+
 ## 0.2.1
 
 2025-09-08

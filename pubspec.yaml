@@ -1,6 +1,6 @@
 name: build_pipe
-description: Build pipline for Flutter apps for different target platforms
-version: 0.2.1
+description: The pipline to build & publish Flutter apps for different target platforms
+version: 0.2.2
 repository: https://github.com/vieolo/flutter_build_pipe
 
 environment:
