@@ -17,4 +17,5 @@ dev_dependencies:
   test: ^1.24.0
 
 executables:
-  build_pipe: build
+  build:
+  publish:
