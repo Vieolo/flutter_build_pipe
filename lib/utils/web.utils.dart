@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'dart:convert';
 
-import 'package:build_pipe/utils/config.utils.dart';
+import 'package:build_pipe/config/config.dart';
+import 'package:build_pipe/config/platform_specific_config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/log.utils.dart';
 import 'package:crypto/crypto.dart';
@@ -20,7 +21,7 @@ class WebUtils {
   /// add the version number to some paths. e.g. `main.dart.js?v=0.12.3`
   ///
   /// By adding the version number, the browser will re-fetch the files again
-  static Future<void> applyCacheBustPostBuild(BuildConfig config) async {
+  static Future<void> applyCacheBustPostBuild(BPConfig config) async {
     WebVersioningType versioningType = config.web?.webVersioningType ?? WebVersioningType.hash;
     String introText = versioningType.isHash ? "Applying web cache busting" : "Applying web cache busting for version: ${config.version}";
 
