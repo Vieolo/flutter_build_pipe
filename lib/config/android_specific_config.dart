@@ -1,50 +1,38 @@
 import 'dart:io';
+import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/config/platform_specific_config.dart';
+import 'package:build_pipe/utils/console.utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart' as yaml;
+import 'package:googleapis/androidpublisher/v3.dart' as play;
+import 'package:googleapis_auth/auth_io.dart' as google_auth;
+
+class AndroidConfig {
+  AndroidPublishConfig? publishConfig;
+
+  AndroidConfig({this.publishConfig});
+}
 
 class AndroidPublishConfig {
   // 1. path to build file `e.g. build/ios/ipa/yourapp.ipa`
   String outputFilePath;
+  // 2. The optional env var key to the path of Play Store API credential JSON file
   String? credentialPath;
   // 3. Bundle id `com.example.app`
   String bundleID;
-  String track;
+  // 4. The release track to be created in Play Store
+  String releaseTrack;
 
   AndroidPublishConfig({
     required this.bundleID,
     required this.outputFilePath,
-    required this.track,
+    required this.releaseTrack,
     this.credentialPath,
   });
 
-  /// Gets the path of the JSON credential file
-  /// If the path is provided in the env, it will be
-  /// read from the env, otherwise the default path
-  /// will be provided.
+  /// Checks if the given config in the `pubspec` is valid or not
   ///
-  /// The default path is:
-  /// ./private_keys/play_api_key.json
-  String getCredentialPath() {
-    String jcp = "";
-    if (credentialPath != null && credentialPath!.isNotEmpty) {
-      jcp = Platform.environment[credentialPath!] ?? "";
-    }
-    if (jcp.isEmpty) {
-      jcp = p.join("private_keys", "play_api_key.json");
-    }
-    return jcp;
-  }
-
-  factory AndroidPublishConfig.fromMap(yaml.YamlMap data) {
-    return AndroidPublishConfig(
-      credentialPath: data["credentialPath"],
-      track: data["releaseTrack"],
-      bundleID: data["bundleID"],
-      outputFilePath: data["outputFilePath"],
-    );
-  }
-
+  /// Should be called before the `fromMap` function
   static (bool, String?) isValid(yaml.YamlMap data, TargetPlatform tp) {
     if (!data.containsKey("bundleID") || data["bundleID"] == "") {
       return (false, "'bundleID' is missing from the publish config for ${tp.name}. The bundle id is structured as 'com.example.your_app'.");
@@ -64,10 +52,146 @@ class AndroidPublishConfig {
 
     return (true, null);
   }
-}
 
-class AndroidConfig {
-  AndroidPublishConfig? publishConfig;
+  /// Converts the YAML map to an instance of [AndroidPublishConfig]
+  ///
+  /// The data should first be validated with the `isValid` function
+  factory AndroidPublishConfig.fromMap(yaml.YamlMap data) {
+    return AndroidPublishConfig(
+      credentialPath: data["credentialPath"],
+      releaseTrack: data["releaseTrack"],
+      bundleID: data["bundleID"],
+      outputFilePath: data["outputFilePath"],
+    );
+  }
 
-  AndroidConfig({this.publishConfig});
+  /// Gets the path of the JSON credential file
+  /// If the path is provided in the env, it will be
+  /// read from the env, otherwise the default path
+  /// will be provided.
+  ///
+  /// The default path is:
+  /// ./private_keys/play_api_key.json
+  String getCredentialPath() {
+    String jcp = "";
+    if (credentialPath != null && credentialPath!.isNotEmpty) {
+      jcp = Platform.environment[credentialPath!] ?? "";
+    }
+    if (jcp.isEmpty) {
+      jcp = p.join("private_keys", "play_api_key.json");
+    }
+    return jcp;
+  }
+
+  // Google play API has a concept of "edit"
+  //
+  // The edit is created, the file is added to it, the track
+  // is selected, all the changes are made, and then the edit
+  // is commited.
+  //
+  // Documentation:
+  // https://developers.google.com/android-publisher/edits
+
+  /// Uploads the built app (either appbundle or apk) to the playstore
+  /// using Play Store Developer API
+  ///
+  /// The user should create the correct credentials using GCP, downloads
+  /// the JSON api key and place it in the path
+  Future<void> uploadToPlayStore({
+    required BPConfig config,
+  }) async {
+    // Reading the user credentials from their JSON file
+    late google_auth.ServiceAccountCredentials credentials;
+    try {
+      credentials = google_auth.ServiceAccountCredentials.fromJson(
+        File(getCredentialPath()).readAsStringSync(),
+      );
+    } catch (e) {
+      Console.logError("Error while using the Play Store API json credentials");
+      Console.logError(e.toString());
+      return;
+    }
+
+    // Getting the client for the service account, using the credentials
+    // created via JSON file, with the publishing scope
+    //
+    // The client will have to be closed at the end of the function
+    google_auth.AutoRefreshingAuthClient client = await google_auth.clientViaServiceAccount(
+      credentials,
+      [play.AndroidPublisherApi.androidpublisherScope],
+    );
+
+    // Creating the api object to call the Google play API
+    play.AndroidPublisherApi api = play.AndroidPublisherApi(client);
+
+    // Calling the APIs
+    //
+    // 1. Create edit object for the app
+    Console.logInfo("Creating a '$releaseTrack' release for Android...");
+    late play.AppEdit edit;
+    try {
+      edit = await api.edits.insert(play.AppEdit(), bundleID);
+      if (edit.id == null) {
+        throw Exception("The created edit is invalid");
+      }
+    } catch (e) {
+      Console.logError("There was an error while creating an edit to the Play Store API");
+      Console.logError(e.toString());
+      client.close();
+      return;
+    }
+
+    // 2. Upload the bundle or apk file
+    Console.logInfo("Uploading the build file for Android...");
+    try {
+      await api.edits.bundles.upload(
+        bundleID,
+        edit.id!,
+        uploadMedia: play.Media(File(outputFilePath).openRead(), File(outputFilePath).lengthSync()),
+      );
+    } catch (e) {
+      Console.logError("There was an error while uploading the build file to the Play Store API");
+      Console.logError(e.toString());
+      client.close();
+      return;
+    }
+
+    // 3. Assign a track to the edit
+    try {
+      await api.edits.tracks.update(
+        play.Track(
+          track: releaseTrack,
+          releases: [
+            play.TrackRelease(
+              status: 'completed',
+              versionCodes: [config.buildVersion],
+              // releaseNotes: [
+              //   play.LocalizedText(language: 'en-US', text: 'Automated release via flutter_build_pipe'),
+              // ],
+            ),
+          ],
+        ),
+        bundleID,
+        edit.id!,
+        releaseTrack,
+      );
+    } catch (e) {
+      Console.logError("There was an error while creating the $releaseTrack track in Play Store API");
+      Console.logError(e.toString());
+      client.close();
+      return;
+    }
+
+    // 4. Commit the edit
+    try {
+      await api.edits.commit(bundleID, edit.id!);
+      Console.logSuccess('√ Android app is successfully published!');
+    } catch (e) {
+      Console.logError("There was an error while commiting the changes to the Play Store API");
+      Console.logError(e.toString());
+    }
+
+    // Closing the client
+    client.close();
+  }
 }
