@@ -23,6 +23,9 @@ The pipeline for building & publishing your Flutter app for different target pla
 - Publishing the iOS app to App Store
 - Optional clearing of XCode's derived data for consistent builds
 
+#### Android
+- Publishing the Android app to the Play Store
+
 #### Web
 - Adds the version query paramter to build files post-build to solve the caching problem of Flutter web (e.g. `flutter_bootstrap.js?v=0.12.1`)
 
