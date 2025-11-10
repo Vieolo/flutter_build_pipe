@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:build_pipe/config/config.dart';
-import 'package:build_pipe/config/platform_specific_config.dart';
+import 'package:build_pipe/config/web_specific_config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/log.utils.dart';
 import 'package:crypto/crypto.dart';
