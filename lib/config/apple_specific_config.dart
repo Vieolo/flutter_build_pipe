@@ -1,8 +1,27 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/config/platform_specific_config.dart';
+import 'package:build_pipe/utils/console.utils.dart';
+import 'package:build_pipe/utils/process.utils.dart';
 import 'package:yaml/yaml.dart' as yaml;
 
+class IOSConfig {
+  ApplePublishConfig? publishConfig;
+
+  IOSConfig({this.publishConfig});
+}
+
+class MacOSConfig {
+  ApplePublishConfig? publishConfig;
+
+  MacOSConfig({this.publishConfig});
+}
+
+/// The publish config class, handling for both iOS and macOS
+///
+/// Contains the `upload` function to handle the upload process
 class ApplePublishConfig {
   // 1. path to build file `e.g. build/ios/ipa/yourapp.ipa`
   String outputFilePath;
@@ -17,16 +36,9 @@ class ApplePublishConfig {
 
   ApplePublishConfig({required this.keyID, required this.appAppleID, required this.bundleID, required this.issuerID, required this.outputFilePath});
 
-  factory ApplePublishConfig.fromMap(yaml.YamlMap data) {
-    return ApplePublishConfig(
-      appAppleID: Platform.environment[data["appAppleID"]]!,
-      keyID: Platform.environment[data["keyID"]]!,
-      issuerID: Platform.environment[data["issuerID"]]!,
-      bundleID: data["bundleID"],
-      outputFilePath: data["outputFilePath"],
-    );
-  }
-
+  /// Checks if the given config in the `pubspec` is valid or not
+  ///
+  /// Should be called before the `fromMap` function
   static (bool, String?) isValid(yaml.YamlMap data, TargetPlatform tp) {
     if (!data.containsKey("keyID") || data["keyID"] == "" || !Platform.environment.containsKey(data["keyID"]) || Platform.environment["keyID"] == "") {
       return (
@@ -66,16 +78,71 @@ class ApplePublishConfig {
 
     return (true, null);
   }
-}
 
-class IOSConfig {
-  ApplePublishConfig? publishConfig;
+  /// Converts the YAML map to an instance of [ApplePublishConfig]
+  ///
+  /// The data should first be validated with the `isValid` function
+  factory ApplePublishConfig.fromMap(yaml.YamlMap data) {
+    return ApplePublishConfig(
+      appAppleID: Platform.environment[data["appAppleID"]]!,
+      keyID: Platform.environment[data["keyID"]]!,
+      issuerID: Platform.environment[data["issuerID"]]!,
+      bundleID: data["bundleID"],
+      outputFilePath: data["outputFilePath"],
+    );
+  }
 
-  IOSConfig({this.publishConfig});
-}
+  /// Uploads the build artifact to the iOS App Store
+  Future<void> uploadToIOS({
+    required BPConfig config,
+  }) async {
+    var iosOut = await ProcessHelper.runCommandUsingConfig(
+      startMessage: "Starting to publish the iOS app...",
+      errorMessage: "There was a problem in publishing the iOS app",
+      successMessage: "√ iOS app is successfully published",
+      executable: "xcrun",
+      exitIfError: false,
+      redactions: [
+        appAppleID,
+        issuerID,
+        keyID,
+      ],
+      arguments: [
+        "altool",
+        "--upload-package",
+        outputFilePath,
+        "-t",
+        'ios',
+        "--apple-id",
+        appAppleID,
+        "--bundle-id",
+        '"$bundleID"',
+        "--apiKey",
+        keyID,
+        "--apiIssuer",
+        issuerID,
+        "--bundle-short-version-string",
+        config.version,
+        "--bundle-version",
+        config.buildVersion,
+        "--asc-public-id",
+        issuerID,
+        "--output-format",
+        "json",
+      ],
+      config: config,
+    );
 
-class MacOSConfig {
-  ApplePublishConfig? publishConfig;
-
-  MacOSConfig({this.publishConfig});
+    if (iosOut.$1 != 0 && iosOut.$2.isNotEmpty) {
+      try {
+        Map<String, dynamic> iosErr = jsonDecode(iosOut.$2[0]);
+        if (iosErr.containsKey("product-errors")) {
+          List<dynamic> peList = iosErr["product-errors"];
+          for (var pe in peList) {
+            Console.logError("-- ${pe["userInfo"]["NSLocalizedFailureReason"] ?? "-"}\n");
+          }
+        }
+      } catch (_) {}
+    }
+  }
 }
