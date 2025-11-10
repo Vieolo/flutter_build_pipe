@@ -10,7 +10,7 @@ class PipeBuilder {
   /// This function is private and is called via platform specific interface
   static Future<(int, List<String>)> _runBuildCommand(
     BPConfig config,
-    BuildConfigPlatform platformConfig,
+    PlatformConfig platformConfig,
     String userfacingPlatform,
   ) async {
     return await ProcessHelper.runCommandUsingConfig(
@@ -54,7 +54,7 @@ class PipeBuilder {
   /// via the pubspec config, it will handle the web cache busting as well
   static Future<void> buildWeb(BPConfig config) async {
     await _runBuildCommand(config, config.web!, "Web");
-    if (config.web!.addVersionQueryParam == true) {
+    if (config.web!.webConfig!.addVersionQueryParam == true) {
       await WebUtils.applyCacheBustPostBuild(config);
     }
   }

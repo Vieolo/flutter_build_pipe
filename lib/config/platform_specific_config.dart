@@ -85,45 +85,82 @@ class ApplePublishConfig {
   }
 }
 
-/// The class responsible for hold and parsing the user provided config
-class BuildConfigPlatform {
-  // General
-  TargetPlatform platform;
-  String buildCommand;
+class IOSConfig {
+  ApplePublishConfig? publishConfig;
 
+  IOSConfig({this.publishConfig});
+}
+
+class MacOSConfig {
+  ApplePublishConfig? publishConfig;
+
+  MacOSConfig({this.publishConfig});
+}
+
+class AndroidConfig {}
+
+class WindowsConfig {}
+
+class LinuxConfig {}
+
+class WebConfig {
   // Web specific
   bool? addVersionQueryParam;
   WebVersioningType? webVersioningType;
 
-  // iOS specific
-  ApplePublishConfig? iosPublishConfig;
+  WebConfig({this.addVersionQueryParam, this.webVersioningType});
+}
 
-  // macOS specific
-  ApplePublishConfig? macosPublishConfig;
+/// Config for a specific platform
+///
+/// It holds the name of the platform, the build command, and
+/// an embedded class holding the config specific for the platform
+class PlatformConfig {
+  // config present in all platforms
+  //
+  // If a config is given, it must have the following
+  // fields
+  TargetPlatform platform;
+  String buildCommand;
 
-  BuildConfigPlatform({
+  // Platform config
+  //
+  // These instances will only hold platform specific
+  // fields
+  IOSConfig? iosConfig;
+  MacOSConfig? macOSConfig;
+  AndroidConfig? androidConfig;
+  WindowsConfig? windowsConfig;
+  LinuxConfig? linuxConfig;
+  WebConfig? webConfig;
+
+  PlatformConfig({
     required this.platform,
     required this.buildCommand,
-    this.addVersionQueryParam,
-    this.webVersioningType,
-    this.iosPublishConfig,
-    this.macosPublishConfig,
+    this.iosConfig,
+    this.macOSConfig,
+    this.androidConfig,
+    this.windowsConfig,
+    this.linuxConfig,
+    this.webConfig,
   });
 
-  /// Parses a map to `BuildConfigPlatform`
-  static BuildConfigPlatform? fromMap(yaml.YamlMap data, TargetPlatform platform) {
+  /// Parses a map to `PlatformConfig`
+  static PlatformConfig? fromMap(yaml.YamlMap data, TargetPlatform platform) {
     if (!data.containsKey("build_command") || data["build_command"].toString().isEmpty) {
       return null;
     }
 
-    var bcp = BuildConfigPlatform(
+    var pc = PlatformConfig(
       platform: platform,
       buildCommand: data["build_command"],
     );
 
     if (platform == TargetPlatform.web) {
-      bcp.addVersionQueryParam = (data['add_version_query_param'] ?? true);
-      bcp.webVersioningType = WebVersioningType.getByName(data['query_param_versioning_type']);
+      pc.webConfig = WebConfig(
+        addVersionQueryParam: (data['add_version_query_param'] ?? true),
+        webVersioningType: WebVersioningType.getByName(data['query_param_versioning_type']),
+      );
     }
 
     if (platform == TargetPlatform.ios) {
@@ -133,7 +170,9 @@ class BuildConfigPlatform {
           Console.logError("Invalid publish config for iOS -> ${iosPublishValidation.$2 ?? "-"}");
           exit(1);
         }
-        bcp.iosPublishConfig = ApplePublishConfig.fromMap(data["publish"]);
+        pc.iosConfig = IOSConfig(
+          publishConfig: ApplePublishConfig.fromMap(data["publish"]),
+        );
       }
     }
 
@@ -144,10 +183,12 @@ class BuildConfigPlatform {
           Console.logError("Invalid publish config for macOS -> ${macosPublishValidation.$2 ?? "-"}");
           exit(1);
         }
-        bcp.macosPublishConfig = ApplePublishConfig.fromMap(data["publish"]);
+        pc.macOSConfig = MacOSConfig(
+          publishConfig: ApplePublishConfig.fromMap(data["publish"]),
+        );
       }
     }
 
-    return bcp;
+    return pc;
   }
 }

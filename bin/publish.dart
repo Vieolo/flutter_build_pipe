@@ -9,8 +9,8 @@ import 'package:build_pipe/utils/process.utils.dart';
 void main(List<String> args) async {
   BPConfig config = await BPConfig.readPubspec();
 
-  if (config.ios != null && config.ios!.iosPublishConfig != null) {
-    var iosPub = config.ios!.iosPublishConfig!;
+  if (config.ios != null && config.ios!.iosConfig!.publishConfig != null) {
+    var iosPub = config.ios!.iosConfig!.publishConfig!;
     var iosOut = await ProcessHelper.runCommandUsingConfig(
       startMessage: "Starting to publish the iOS app...",
       errorMessage: "There was a problem in publishing the iOS app",

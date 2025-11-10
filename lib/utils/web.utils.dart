@@ -22,7 +22,7 @@ class WebUtils {
   ///
   /// By adding the version number, the browser will re-fetch the files again
   static Future<void> applyCacheBustPostBuild(BPConfig config) async {
-    WebVersioningType versioningType = config.web?.webVersioningType ?? WebVersioningType.hash;
+    WebVersioningType versioningType = config.web?.webConfig?.webVersioningType ?? WebVersioningType.hash;
     String introText = versioningType.isHash ? "Applying web cache busting" : "Applying web cache busting for version: ${config.version}";
 
     List<String> logLines = LogUtils.getActionStartLines(introText);

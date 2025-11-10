@@ -7,12 +7,12 @@ import 'package:yaml/yaml.dart' as yaml;
 
 /// The actual class holding the fields of the config
 class BPConfig {
-  BuildConfigPlatform? web;
-  BuildConfigPlatform? ios;
-  BuildConfigPlatform? android;
-  BuildConfigPlatform? macos;
-  BuildConfigPlatform? windows;
-  BuildConfigPlatform? linux;
+  PlatformConfig? web;
+  PlatformConfig? ios;
+  PlatformConfig? android;
+  PlatformConfig? macos;
+  PlatformConfig? windows;
+  PlatformConfig? linux;
   String? xcodeDerivedKey;
   bool cleanFlutter;
   bool printstdout;
@@ -44,31 +44,31 @@ class BPConfig {
     yaml.YamlMap platforms = data["platforms"] ?? {};
     return BPConfig(
       android: platforms.containsKey("android")
-          ? BuildConfigPlatform.fromMap(
+          ? PlatformConfig.fromMap(
               platforms["android"],
               TargetPlatform.android,
             )
           : null,
-      ios: platforms.containsKey("ios") ? BuildConfigPlatform.fromMap(platforms["ios"], TargetPlatform.ios) : null,
+      ios: platforms.containsKey("ios") ? PlatformConfig.fromMap(platforms["ios"], TargetPlatform.ios) : null,
       macos: platforms.containsKey("macos")
-          ? BuildConfigPlatform.fromMap(
+          ? PlatformConfig.fromMap(
               platforms["macos"],
               TargetPlatform.macos,
             )
           : null,
       linux: platforms.containsKey("linux")
-          ? BuildConfigPlatform.fromMap(
+          ? PlatformConfig.fromMap(
               platforms["linux"],
               TargetPlatform.linux,
             )
           : null,
       windows: platforms.containsKey("windows")
-          ? BuildConfigPlatform.fromMap(
+          ? PlatformConfig.fromMap(
               platforms["windows"],
               TargetPlatform.windows,
             )
           : null,
-      web: platforms.containsKey("web") ? BuildConfigPlatform.fromMap(platforms["web"], TargetPlatform.web) : null,
+      web: platforms.containsKey("web") ? PlatformConfig.fromMap(platforms["web"], TargetPlatform.web) : null,
       xcodeDerivedKey: data["xcode_derived_data_path_env_key"],
       cleanFlutter: data["clean_flutter"] ?? true,
       generateLog: data["generate_log"] ?? true,
