@@ -31,6 +31,11 @@ build_pipe:
         outputFilePath: build/ios/ipa/yourapp.ipa
     android:
       build_command: flutter build appbundle
+      publish:
+        outputFilePath: build/app/outputs/bundle/release/app-release.aab
+        bundleID: com.example.yourapp
+        releaseTrack: internal
+        credentialPath: PLAY_API_KEY_PATH # optional env variabl key
     macos:
       build_command: flutter build macos
     windows:

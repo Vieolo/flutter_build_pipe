@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:build_pipe/utils/config.utils.dart';
+import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/log.utils.dart';
 
@@ -9,7 +9,7 @@ class XCodeUtils {
   /// This function deletes the derived data of the XCode before the build
   /// to prevent faulty caches affecting the production build
   static Future<bool> deleteDerivedData(
-    BuildConfig config,
+    BPConfig config,
     String derivedPath,
   ) async {
     bool deleted = false;

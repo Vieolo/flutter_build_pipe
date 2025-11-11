@@ -1,4 +1,5 @@
-import 'package:build_pipe/utils/config.utils.dart';
+import 'package:build_pipe/config/config.dart';
+import 'package:build_pipe/config/platform_specific_config.dart';
 import 'package:build_pipe/utils/process.utils.dart';
 import 'package:build_pipe/utils/web.utils.dart';
 
@@ -8,8 +9,8 @@ class PipeBuilder {
   /// The actual function running the build command
   /// This function is private and is called via platform specific interface
   static Future<(int, List<String>)> _runBuildCommand(
-    BuildConfig config,
-    BuildConfigPlatform platformConfig,
+    BPConfig config,
+    PlatformConfig platformConfig,
     String userfacingPlatform,
   ) async {
     return await ProcessHelper.runCommandUsingConfig(
@@ -24,43 +25,43 @@ class PipeBuilder {
   }
 
   /// Builds for `iOS`
-  static Future<void> buildIOS(BuildConfig config) async {
+  static Future<void> buildIOS(BPConfig config) async {
     await _runBuildCommand(config, config.ios!, "iOS");
   }
 
   /// Builds for `Android`
-  static Future<void> buildAndroid(BuildConfig config) async {
+  static Future<void> buildAndroid(BPConfig config) async {
     await _runBuildCommand(config, config.android!, "Android");
   }
 
   /// Builds for `macOS`
-  static Future<void> buildMacOS(BuildConfig config) async {
+  static Future<void> buildMacOS(BPConfig config) async {
     await _runBuildCommand(config, config.macos!, "macOS");
   }
 
   /// Builds for `Linux`
-  static Future<void> buildLinux(BuildConfig config) async {
+  static Future<void> buildLinux(BPConfig config) async {
     await _runBuildCommand(config, config.linux!, "Linux");
   }
 
   /// Builds for `Windows`
-  static Future<void> buildWindows(BuildConfig config) async {
+  static Future<void> buildWindows(BPConfig config) async {
     await _runBuildCommand(config, config.windows!, "Windows");
   }
 
   /// Builds for `web`
   /// After the build process is completed, if not prevented
   /// via the pubspec config, it will handle the web cache busting as well
-  static Future<void> buildWeb(BuildConfig config) async {
+  static Future<void> buildWeb(BPConfig config) async {
     await _runBuildCommand(config, config.web!, "Web");
-    if (config.web!.addVersionQueryParam == true) {
+    if (config.web!.webConfig!.addVersionQueryParam == true) {
       await WebUtils.applyCacheBustPostBuild(config);
     }
   }
 
   /// Initiates the build for all platforms mentioned
   /// in the config
-  static Future<void> buildAll(BuildConfig config) async {
+  static Future<void> buildAll(BPConfig config) async {
     if (config.ios != null) {
       await buildIOS(config);
     }
