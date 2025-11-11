@@ -110,7 +110,7 @@ ios:
     # its fields are required
     #
     # To learn how to setup the iOS publish, have a
-    # look at [this page](doc/publish/publish_ios.md)
+    # look at the iOS doc
     #
     # optional
     publish:
@@ -137,7 +137,37 @@ ios:
 
 # These properties are only applicable to android
 android:
-    # No specific fields yet
+    # The publish object provides the Android-specific
+    # configuration to publish the built Android app to
+    # the Play Store.
+    #
+    # This object is optional but if provided, most of
+    # its fields are required
+    #
+    # To learn how to setup the Android publish, have a
+    # look at the Android doc
+    #
+    # optional
+    publish:
+        # The bundle id or package name of your app, used in Play Store
+        #
+        # Required
+        bundleID: com.example.yourapp
+        # The path to the local build file
+        #
+        # Required
+        outputFilePath: build/app/outputs/bundle/release/app-release.aab
+        # The type of the release to be made. The options are `internal`,
+        # `alpha`, `beta`, and `production`
+        #
+        # Required
+        releaseTrack: internal
+        # The env variable holding the path to the JSON key of the Play
+        # Store API. If not provided, the default path will be looked up.
+        # The default path is -> `./private_keys/play_api_key.json` (in the project root)
+        #
+        # Optional
+        credentialPath: PLAY_API_KEY_PATH # optional env variabl key
 
 # These properties are only applicable to macos
 macos:

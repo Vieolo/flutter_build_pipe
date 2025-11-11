@@ -1,14 +1,15 @@
 import 'dart:io';
 
+import 'package:build_pipe/config/platform_specific_config.dart';
 import 'package:build_pipe/utils/builder.utils.dart';
-import 'package:build_pipe/utils/config.utils.dart';
+import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/process.utils.dart';
 import 'package:build_pipe/utils/xcode.utils.dart';
 
 /// Main entry point of the `dart run build_pipe:build` command
 void main(List<String> args) async {
-  BuildConfig config = await BuildConfig.readPubspec();
+  BPConfig config = await BPConfig.readPubspec();
 
   Console.logInfo("\nStarting the build process...\n");
   print("The following target platforms are detected:");

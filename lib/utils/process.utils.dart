@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:build_pipe/utils/config.utils.dart';
+import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 
 String _redact(String output, List<String>? redactions) {
@@ -93,7 +93,7 @@ class ProcessHelper {
   static Future<(int, List<String>)> runCommandUsingConfig({
     required String executable,
     required List<String> arguments,
-    required BuildConfig config,
+    required BPConfig config,
     String? startMessage,
     String? successMessage,
     String? errorMessage,

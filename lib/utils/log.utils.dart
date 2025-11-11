@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:build_pipe/utils/config.utils.dart';
+import 'package:build_pipe/config/config.dart';
 
 /// Utility class for generating the log files
 class LogUtils {
@@ -25,7 +25,7 @@ class LogUtils {
 
   /// Takes a list of lines and appends it to the log file
   static Future<void> appendLogUsingStringList(
-    BuildConfig config,
+    BPConfig config,
     List<String> logLines,
   ) async {
     if (!config.generateLog) return;
