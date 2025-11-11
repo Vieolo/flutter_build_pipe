@@ -1,3 +1,8 @@
+## 0.2.5
+
+2025-11-11
+- Added the publish feature for Android
+
 ## 0.2.4
 
 2025-09-15
