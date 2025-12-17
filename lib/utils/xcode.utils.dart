@@ -16,7 +16,7 @@ class XCodeUtils {
     List<String> logLines = LogUtils.getActionStartLines(
       "Deleting the derived data of XCode",
     );
-    Console.logInfo("\nDeleting the XCode derived data...");
+    Console.logInfo("└── Deleting the XCode derived data...");
 
     var dir = Directory(derivedPath);
     if (!await dir.exists()) {
@@ -34,7 +34,8 @@ class XCodeUtils {
           "\n[folder] $derivedPath",
           "[action] deleted",
         ]);
-        Console.logSuccess("√ XCode derived data is deleted");
+        stdout.write('\x1B[1A\x1B[2K\r');
+        Console.logSuccess("└── √ XCode derived data is deleted");
         deleted = true;
       } catch (e) {
         logLines.addAll([

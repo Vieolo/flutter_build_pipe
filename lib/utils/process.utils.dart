@@ -27,6 +27,7 @@ class ProcessHelper {
     String? errorMessage,
     bool exitIfError = true,
     List<String>? redactions,
+    bool? clearStartMessage,
   }) async {
     if (startMessage != null && startMessage.isNotEmpty) {
       Console.logInfo(startMessage);
@@ -81,6 +82,10 @@ class ProcessHelper {
       await logSink.close();
     }
 
+    if (clearStartMessage == true) {
+      stdout.write('\x1B[1A\x1B[2K\r');
+    }
+
     // The command has failed
     // If the failure is not acceptable (by passing the `exitIfError`),
     // then we terminate the run
@@ -114,6 +119,7 @@ class ProcessHelper {
     String? errorMessage,
     bool exitIfError = true,
     List<String>? redactions,
+    bool? clearStartMessage,
   }) async {
     return await runCommand(
       executable: executable,
@@ -125,6 +131,7 @@ class ProcessHelper {
       startMessage: startMessage,
       successMessage: successMessage,
       redactions: redactions,
+      clearStartMessage: clearStartMessage,
     );
   }
 }

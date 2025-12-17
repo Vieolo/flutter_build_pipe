@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:build_pipe/config/platform_specific_config.dart';
 import 'package:build_pipe/utils/builder.utils.dart';
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
@@ -14,18 +13,22 @@ void main(List<String> args) async {
   Console.logInfo("\nStarting the build process...\n");
   print("The following target platforms are detected:");
   for (var i = 0; i < config.platforms.length; i++) {
-    print("|-- ${config.platforms[i].name}${i == config.platforms.length - 1 ? "\n" : ""}");
+    String prefix = "├──";
+    if (i == config.platforms.length - 1) {
+      prefix = "└──";
+    }
+    print("$prefix ${config.platforms[i].name}${i == config.platforms.length - 1 ? "\n" : ""}");
   }
 
-  if (config.xcodeDerivedKey != null &&
-      config.xcodeDerivedKey!.isNotEmpty &&
-      config.platforms.any(
-        (z) => z == TargetPlatform.ios || z == TargetPlatform.macos,
-      )) {
+  if (config.cleanFlutter || config.needXCodeDerivedCleaning) {
+    Console.logInfo("Pre-build cleanups...");
+  }
+
+  if (config.needXCodeDerivedCleaning) {
     String? xcodePath = Platform.environment[config.xcodeDerivedKey!];
     if (xcodePath == null || xcodePath.isEmpty) {
       Console.logError(
-        "${config.xcodeDerivedKey} is either not a valid environmental variable or has an empty value!",
+        "└── ${config.xcodeDerivedKey} is either not a valid environmental variable or has an empty value!",
       );
     } else {
       bool deleted = await XCodeUtils.deleteDerivedData(config, xcodePath);
@@ -40,21 +43,24 @@ void main(List<String> args) async {
       executable: "flutter",
       arguments: ["clean"],
       config: config,
-      startMessage: "Cleaning flutter existing builds...",
-      successMessage: "√ Flutter cleaned",
-      errorMessage: "X There was an error while cleaning the Flutter build",
+      startMessage: "└── Cleaning flutter existing builds...",
+      clearStartMessage: true,
+      successMessage: "└── √ Flutter cleaned",
+      errorMessage: "└── X There was an error while cleaning the Flutter build",
     );
 
     await ProcessHelper.runCommandUsingConfig(
       executable: "flutter",
       arguments: ["pub", "get"],
       config: config,
-      startMessage: "Getting pub packages",
-      successMessage: "√ Flutter pub packages synced\n",
-      errorMessage: "X There was an error while getting pub packages",
+      startMessage: "└── Getting pub packages...",
+      clearStartMessage: true,
+      successMessage: "└── √ Flutter pub packages synced\n",
+      errorMessage: "└── X There was an error while getting pub packages",
     );
   }
 
+  Console.logInfo("Building the app...");
   await PipeBuilder.buildAll(config);
 
   if (config.postBuildCommand != null && config.postBuildCommand!.isNotEmpty) {
@@ -63,6 +69,7 @@ void main(List<String> args) async {
       arguments: config.postBuildCommand!.split(" ").sublist(1),
       config: config,
       startMessage: "\nRunning post-build command...",
+      clearStartMessage: true,
       successMessage: "√ post-build command is completed",
       errorMessage: "X post-build command has failed",
     );
