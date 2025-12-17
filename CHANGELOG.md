@@ -1,3 +1,9 @@
+## 0.2.6
+
+2025-12-17
+- Improved the error handling while dealing with the log files
+- Improved the logging of the build process to the terminal
+
 ## 0.2.5
 
 2025-11-11
