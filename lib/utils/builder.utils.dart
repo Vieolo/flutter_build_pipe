@@ -17,9 +17,10 @@ class PipeBuilder {
       executable: platformConfig.buildCommand.split(" ")[0],
       arguments: platformConfig.buildCommand.split(" ").sublist(1),
       config: config,
-      startMessage: "\nBuilding $userfacingPlatform...",
-      successMessage: "√ $userfacingPlatform build is done\n",
-      errorMessage: "X There was an error building for $userfacingPlatform\n",
+      startMessage: "└── Building $userfacingPlatform...",
+      clearStartMessage: true,
+      successMessage: "└── √ $userfacingPlatform build is done\n",
+      errorMessage: "└── X There was an error building for $userfacingPlatform\n",
       exitIfError: false,
     );
   }

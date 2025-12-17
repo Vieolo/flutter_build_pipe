@@ -15,5 +15,6 @@ If `semver` is selected as the query param type, you are in control of the cache
 Please note that our approach is fragile by nature since it depends on the generated Flutter code which may change by a new update. At the time of writing, our code is tested on the following Flutter versions:
   - `Flutter v3.32.5`
   - `Flutter v3.35.1`
+  - `Flutter v3.38.5`
 
 You can prevent this by setting the `add_version_query_param` field in your web platform to `false`
