@@ -8,7 +8,7 @@ import 'package:build_pipe/utils/xcode.utils.dart';
 
 /// Main entry point of the `dart run build_pipe:build` command
 void main(List<String> args) async {
-  BPConfig config = await BPConfig.readPubspec();
+  BPConfig config = await BPConfig.readPubspec(args);
 
   Console.logInfo("\nStarting the build process...\n");
   print("The following target platforms are detected:");
