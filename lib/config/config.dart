@@ -20,6 +20,7 @@ class BPConfig {
   String version;
   String buildVersion;
   bool generateLog;
+  String? preBuildCommand;
   String? postBuildCommand;
 
   BPConfig({
@@ -30,6 +31,7 @@ class BPConfig {
     this.web,
     this.windows,
     this.xcodeDerivedKey,
+    this.preBuildCommand,
     this.postBuildCommand,
     required this.cleanFlutter,
     required this.printstdout,
@@ -73,6 +75,7 @@ class BPConfig {
       cleanFlutter: data["clean_flutter"] ?? true,
       generateLog: data["generate_log"] ?? true,
       printstdout: data["print_stdout"] ?? false,
+      preBuildCommand: data["pre_build_command"],
       postBuildCommand: data["post_build_command"],
       timestamp: DateTime.now(),
       version: version,

@@ -60,6 +60,18 @@ void main(List<String> args) async {
     );
   }
 
+  if (config.preBuildCommand != null && config.preBuildCommand!.isNotEmpty) {
+    await ProcessHelper.runCommandUsingConfig(
+      executable: config.preBuildCommand!.split(" ")[0],
+      arguments: config.preBuildCommand!.split(" ").sublist(1),
+      config: config,
+      startMessage: "\nRunning pre-build command...",
+      clearStartMessage: true,
+      successMessage: "√ pre-build command is completed",
+      errorMessage: "X pre-build command has failed",
+    );
+  }
+
   Console.logInfo("Building the app...");
   await PipeBuilder.buildAll(config);
 
