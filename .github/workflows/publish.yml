@@ -18,6 +18,9 @@ jobs:
     permissions:
       contents: write # GitHub release creation
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
       - name: Read Changelog
         id: changelog
         shell: bash
