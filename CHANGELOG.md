@@ -1,3 +1,11 @@
+## 0.2.7
+
+2025-12-19
+- Fixed the error while running processes on windows ([#4](https://github.com/Vieolo/flutter_build_pipe/issues/4))
+- Added support for `pre_build_command` which is run before the platform build commands
+- Added the ability to funnel the cmd args passed to the `dart run build_pipe:build` command to the platform build commands
+- Added support for project version without the `+`
+
 ## 0.2.6
 
 2025-12-17

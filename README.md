@@ -37,6 +37,12 @@ Once the configuration is added to your project, you can run the desired command
 # To build for all given platforms
 dart run build_pipe:build
 
+# The build command will funnel all the args passed (e.g., --dart-define) to the build
+# commands on all platforms
+# This allows github actions etc to pass environment vars down to the build cmd without editing the yaml file
+# The build command, as of now, does not have any args or flags of its own
+dart run build_pipe:build --dart-define=ENVIRONMENT=prod
+
 # To publish the built app to the given platforms
 dart run build_pipe:publish
 ```
