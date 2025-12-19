@@ -4,7 +4,7 @@ import 'package:build_pipe/config/config.dart';
 /// Main entry point of the `dart run build_pipe:publish` command
 void main(List<String> args) async {
   // Reading the config
-  BPConfig config = await BPConfig.readPubspec();
+  BPConfig config = await BPConfig.readPubspec(args);
 
   // -=-=-=-=-=-=
   // iOS

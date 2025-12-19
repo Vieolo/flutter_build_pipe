@@ -20,7 +20,9 @@ class BPConfig {
   String version;
   String buildVersion;
   bool generateLog;
+  String? preBuildCommand;
   String? postBuildCommand;
+  List<String> cmdArgs;
 
   BPConfig({
     this.android,
@@ -30,6 +32,7 @@ class BPConfig {
     this.web,
     this.windows,
     this.xcodeDerivedKey,
+    this.preBuildCommand,
     this.postBuildCommand,
     required this.cleanFlutter,
     required this.printstdout,
@@ -37,10 +40,16 @@ class BPConfig {
     required this.version,
     required this.generateLog,
     required this.buildVersion,
+    required this.cmdArgs,
   });
 
   /// Parsed the config from the map
-  factory BPConfig.fromMap(yaml.YamlMap data, String version, String buildVersion) {
+  factory BPConfig.fromMap(
+    yaml.YamlMap data,
+    List<String> args,
+    String version,
+    String buildVersion,
+  ) {
     yaml.YamlMap platforms = data["platforms"] ?? {};
     return BPConfig(
       android: platforms.containsKey("android")
@@ -73,10 +82,12 @@ class BPConfig {
       cleanFlutter: data["clean_flutter"] ?? true,
       generateLog: data["generate_log"] ?? true,
       printstdout: data["print_stdout"] ?? false,
+      preBuildCommand: data["pre_build_command"],
       postBuildCommand: data["post_build_command"],
       timestamp: DateTime.now(),
       version: version,
       buildVersion: buildVersion,
+      cmdArgs: args,
     );
   }
 
@@ -114,7 +125,7 @@ class BPConfig {
     if (web != null) TargetPlatform.web,
   ];
 
-  static Future<BPConfig> readPubspec() async {
+  static Future<BPConfig> readPubspec(List<String> args) async {
     final rawPubspecFile = File('pubspec.yaml');
     if (!(await rawPubspecFile.exists())) {
       Console.logError("pubspec.yaml file could not be found!");
@@ -131,8 +142,12 @@ class BPConfig {
 
     final config = BPConfig.fromMap(
       pubspec["build_pipe"],
+      args,
       pubspec["version"].split("+")[0],
-      pubspec["version"].split("+")[1],
+      // just in case the + doesnt exist
+      pubspec["version"].split("+").length > 1
+          ? pubspec["version"].split("+")[1]
+          : "0",
     );
 
     if (config.platforms.isEmpty) {

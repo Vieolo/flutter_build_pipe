@@ -62,7 +62,8 @@ class ProcessHelper {
     }
 
     // Running the command
-    var process = await Process.start(executable, arguments);
+    // runInShell: true allows commands like 'flutter pub get' work on Windows by running through cmd.
+    var process = await Process.start(executable, arguments, runInShell: true);
     await process.stdout.transform(systemEncoding.decoder).forEach((z) {
       if (stdoutWrite) {
         stdout.write(z);

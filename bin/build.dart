@@ -8,7 +8,7 @@ import 'package:build_pipe/utils/xcode.utils.dart';
 
 /// Main entry point of the `dart run build_pipe:build` command
 void main(List<String> args) async {
-  BPConfig config = await BPConfig.readPubspec();
+  BPConfig config = await BPConfig.readPubspec(args);
 
   Console.logInfo("\nStarting the build process...\n");
   print("The following target platforms are detected:");
@@ -57,6 +57,18 @@ void main(List<String> args) async {
       clearStartMessage: true,
       successMessage: "└── √ Flutter pub packages synced\n",
       errorMessage: "└── X There was an error while getting pub packages",
+    );
+  }
+
+  if (config.preBuildCommand != null && config.preBuildCommand!.isNotEmpty) {
+    await ProcessHelper.runCommandUsingConfig(
+      executable: config.preBuildCommand!.split(" ")[0],
+      arguments: config.preBuildCommand!.split(" ").sublist(1),
+      config: config,
+      startMessage: "\nRunning pre-build command...",
+      clearStartMessage: true,
+      successMessage: "√ pre-build command is completed",
+      errorMessage: "X pre-build command has failed",
     );
   }
 

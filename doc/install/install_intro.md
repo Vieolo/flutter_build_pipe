@@ -30,6 +30,11 @@ build_pipe:
   # Whether to print the output of the commands to the terminal as they are being run
   # optional -- default: false
   print_stdout: false
+  # The command that will be run before the platforms are built
+  # This command will be executed as it's provided
+  # Useful for running code generators or other pre-build tasks
+  # optional -- default: null
+  pre_build_command: your pre-build command # e.g. dart run build_runner build --delete-conflicting-outputs
   # The command that will be run after the all platforms have been
   # built (successfully or not)
   # This command will be executed as it's provided

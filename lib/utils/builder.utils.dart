@@ -13,9 +13,11 @@ class PipeBuilder {
     PlatformConfig platformConfig,
     String userfacingPlatform,
   ) async {
+    final buildCommand = platformConfig.buildCommand.split(" ");
     return await ProcessHelper.runCommandUsingConfig(
-      executable: platformConfig.buildCommand.split(" ")[0],
-      arguments: platformConfig.buildCommand.split(" ").sublist(1),
+      executable: buildCommand[0],
+      // Appending any additional command line arguments passed down from build_pipe:build command
+      arguments: buildCommand.sublist(1) + config.cmdArgs,
       config: config,
       startMessage: "└── Building $userfacingPlatform...",
       clearStartMessage: true,
