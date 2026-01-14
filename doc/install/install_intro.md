@@ -88,10 +88,15 @@ You need at least one target platform using their name, as made above. Target pl
 ```yaml
 # These properties are used on each platform
 common:
-  # Full build command, e.g. flutter build ipa
-  # The command is run as you provide it
-  # required
+  # The config to build the app for the platform
+  # If no build config is provided for a platform, it will be skipped
+  # in the build process. The build config may be omitted for iOS or Android
+  # where a publish config is provided.
+  # optional
   build:
+    # Full build command, e.g. flutter build ipa
+    # The command is run as you provide it
+    # required if build config is present
     build_command: your build command      
 
 # These properties are only applicable to web
