@@ -49,27 +49,42 @@ class PlatformConfig {
 
   /// Parses a map to `PlatformConfig`
   static PlatformConfig? fromMap(yaml.YamlMap data, TargetPlatform platform) {
-    // If there is no build command, the instance won't be created
-    if (!data.containsKey("build")) {
-      return null;
+    String? buildCommand;
+    bool hasBuild = false;
+
+    if (data.containsKey("build")) {
+      dynamic buildData = data["build"];
+      if (buildData is Map && buildData.containsKey("build_command") && buildData["build_command"].toString().isNotEmpty) {
+        buildCommand = buildData["build_command"];
+        hasBuild = buildCommand != null && buildCommand.isNotEmpty;
+      }
     }
 
-    dynamic buildData = data["build"];
-
-    if (buildData is! Map || !buildData.containsKey("build_command") || buildData["build_command"].toString().isEmpty) {
-      return null;
+    // The build config is optional. A platform config can have only a publish config
+    // At the moment, only iOS and Android publish config is supported
+    // So, if the build config is missing and the platform is not iOS or Android, the config is invalid
+    if (!hasBuild) {
+      if (platform == TargetPlatform.ios || platform == TargetPlatform.android) {
+        bool hasPublish = data.containsKey("publish");
+        if (!hasPublish) {
+          return null;
+        }
+      } else {
+        return null;
+      }
     }
 
     // The base PlatformConfig instance
     PlatformConfig pc = PlatformConfig(
       platform: platform,
-      buildCommand: buildData["build_command"],
+      buildCommand: buildCommand ?? "",
     );
 
     // -=-=-=-=-=
     // Web
     // -=-=-=-=-=
     if (platform == TargetPlatform.web) {
+      dynamic buildData = data["build"];
       pc.webConfig = WebConfig(
         addVersionQueryParam: (buildData['add_version_query_param'] ?? true),
         webVersioningType: WebVersioningType.getByName(buildData['query_param_versioning_type']),
