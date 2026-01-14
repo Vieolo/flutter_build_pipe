@@ -10,14 +10,19 @@ import 'package:build_pipe/utils/xcode.utils.dart';
 void main(List<String> args) async {
   BPConfig config = await BPConfig.readPubspec(args);
 
+  if (config.buildPlatforms.isEmpty) {
+    Console.logError("No target platforms were detected for build. Please add your target platforms to pubspec");
+    exit(1);
+  }
+
   Console.logInfo("\nStarting the build process...\n");
   print("The following target platforms are detected:");
-  for (var i = 0; i < config.platforms.length; i++) {
+  for (var i = 0; i < config.buildPlatforms.length; i++) {
     String prefix = "├──";
-    if (i == config.platforms.length - 1) {
+    if (i == config.buildPlatforms.length - 1) {
       prefix = "└──";
     }
-    print("$prefix ${config.platforms[i].name}${i == config.platforms.length - 1 ? "\n" : ""}");
+    print("$prefix ${config.buildPlatforms[i].name}${i == config.buildPlatforms.length - 1 ? "\n" : ""}");
   }
 
   if (config.cleanFlutter || config.needXCodeDerivedCleaning) {
