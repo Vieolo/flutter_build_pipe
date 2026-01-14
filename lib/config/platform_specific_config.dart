@@ -50,14 +50,20 @@ class PlatformConfig {
   /// Parses a map to `PlatformConfig`
   static PlatformConfig? fromMap(yaml.YamlMap data, TargetPlatform platform) {
     // If there is no build command, the instance won't be created
-    if (!data.containsKey("build_command") || data["build_command"].toString().isEmpty) {
+    if (!data.containsKey("build")) {
+      return null;
+    }
+
+    dynamic buildData = data["build"];
+
+    if (buildData is! Map || !buildData.containsKey("build_command") || buildData["build_command"].toString().isEmpty) {
       return null;
     }
 
     // The base PlatformConfig instance
     PlatformConfig pc = PlatformConfig(
       platform: platform,
-      buildCommand: data["build_command"],
+      buildCommand: buildData["build_command"],
     );
 
     // -=-=-=-=-=
@@ -65,8 +71,8 @@ class PlatformConfig {
     // -=-=-=-=-=
     if (platform == TargetPlatform.web) {
       pc.webConfig = WebConfig(
-        addVersionQueryParam: (data['add_version_query_param'] ?? true),
-        webVersioningType: WebVersioningType.getByName(data['query_param_versioning_type']),
+        addVersionQueryParam: (buildData['add_version_query_param'] ?? true),
+        webVersioningType: WebVersioningType.getByName(buildData['query_param_versioning_type']),
       );
     }
 

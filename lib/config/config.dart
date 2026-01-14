@@ -125,6 +125,11 @@ class BPConfig {
     if (web != null) TargetPlatform.web,
   ];
 
+  /// Reads the `pubspec.yaml` file, parses, validates, and returns
+  /// the config object. No exceptions are thrown from this functions,
+  /// instead, the function will exit with a non-zero exit code if
+  /// an error is encountered and a user-facing error message will
+  /// be displayed.
   static Future<BPConfig> readPubspec(List<String> args) async {
     final rawPubspecFile = File('pubspec.yaml');
     if (!(await rawPubspecFile.exists())) {
@@ -140,14 +145,32 @@ class BPConfig {
       exit(1);
     }
 
+    var buildPipeConfig = pubspec["build_pipe"];
+
+    if (!buildPipeConfig.containsKey("workflows")) {
+      Console.logError("No 'workflows' found in build_pipe config.");
+      exit(1);
+    }
+
+    String workflowName = "default";
+    for (var arg in args) {
+      if (arg.startsWith("--workflow=")) {
+        workflowName = arg.split("=")[1];
+      }
+    }
+
+    var workflows = buildPipeConfig["workflows"];
+    if (!workflows.containsKey(workflowName)) {
+      Console.logError("Workflow '$workflowName' not found.");
+      exit(1);
+    }
+
     final config = BPConfig.fromMap(
-      pubspec["build_pipe"],
+      workflows[workflowName],
       args,
       pubspec["version"].split("+")[0],
       // just in case the + doesnt exist
-      pubspec["version"].split("+").length > 1
-          ? pubspec["version"].split("+")[1]
-          : "0",
+      pubspec["version"].split("+").length > 1 ? pubspec["version"].split("+")[1] : "0",
     );
 
     if (config.platforms.isEmpty) {
