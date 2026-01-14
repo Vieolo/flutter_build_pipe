@@ -115,14 +115,26 @@ class BPConfig {
   /// Checks if the XCode derived data is provided AND there is a build target for Apple devices
   bool get needXCodeDerivedCleaning => (ios != null || macos != null) && xcodeDerivedKey != null && xcodeDerivedKey!.isNotEmpty;
 
-  /// The list of target platforms provided in the config
-  List<TargetPlatform> get platforms => [
-    if (ios != null) TargetPlatform.ios,
-    if (android != null) TargetPlatform.android,
+  /// The list of target platforms provided in the config for building
+  /// iOS and android config may exist without a build command, in which case
+  /// they will not be returned
+  /// All other platforms, since they do not have a publish config yet, will
+  /// return if have a config
+  List<TargetPlatform> get buildPlatforms => [
+    if (ios != null && ios!.buildCommand.isNotEmpty) TargetPlatform.ios,
+    if (android != null && android!.buildCommand.isNotEmpty) TargetPlatform.android,
     if (macos != null) TargetPlatform.macos,
     if (linux != null) TargetPlatform.linux,
     if (windows != null) TargetPlatform.windows,
     if (web != null) TargetPlatform.web,
+  ];
+
+  /// The list of target platforms provided in the config for publishing
+  /// Only iOS and Android are supported for publishing at the moment, and they
+  /// will be returned if they have a publish config
+  List<TargetPlatform> get publishPlatforms => [
+    if (ios != null && ios!.iosConfig?.publishConfig != null) TargetPlatform.ios,
+    if (android != null && android!.androidConfig?.publishConfig != null) TargetPlatform.android,
   ];
 
   /// Reads the `pubspec.yaml` file, parses, validates, and returns
@@ -182,7 +194,7 @@ class BPConfig {
       pubspec["version"].split("+").length > 1 ? pubspec["version"].split("+")[1] : "0",
     );
 
-    if (config.platforms.isEmpty) {
+    if (config.publishPlatforms.isEmpty && config.buildPlatforms.isEmpty) {
       Console.logError(
         "No target platforms were detected. Please add your target platforms to pubspec",
       );
