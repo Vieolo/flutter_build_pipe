@@ -149,6 +149,15 @@ class BPConfig {
 
     if (!buildPipeConfig.containsKey("workflows")) {
       Console.logError("No 'workflows' found in build_pipe config.");
+      // In 0.3.0, the named workflows were introduced which is a breaking change to the config structure.
+      // Prior to 0.3.0, the `build_pipe` object contains the config directly, practically for
+      // a single workflow. If the `workflows` key is missing and the `platforms` is present, it is an
+      // indication that the user is using an older version of the package.
+      if (buildPipeConfig.containsKey("platforms")) {
+        Console.logWarning("It seems that you have updated the flutter_build_pipe package to version 0.3.0 or higher. This version contains breaking changes in the configuration.");
+        Console.logWarning("You need to make some changes to your pubspec.yaml file, which should take less than a minute.");
+        Console.logWarning("Please read the migration guide here: https://github.com/vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_0.md");
+      }
       exit(1);
     }
 
