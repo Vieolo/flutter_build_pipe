@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:build_pipe/config/android_specific_config.dart';
 import 'package:build_pipe/config/apple_specific_config.dart';
 import 'package:build_pipe/config/web_specific_config.dart';
@@ -48,7 +46,11 @@ class PlatformConfig {
   });
 
   /// Parses a map to `PlatformConfig`
-  static PlatformConfig? fromMap(yaml.YamlMap data, TargetPlatform platform) {
+  static (PlatformConfig?, List<(Function(String s), String)>) fromMap(yaml.YamlMap platformsObject, TargetPlatform platform, String key) {
+    if (!platformsObject.containsKey(key)) {
+      return (null, []);
+    }
+    yaml.YamlMap data = platformsObject[key];
     String? buildCommand;
     bool hasBuild = false;
 
@@ -67,10 +69,10 @@ class PlatformConfig {
       if (platform == TargetPlatform.ios || platform == TargetPlatform.android) {
         bool hasPublish = data.containsKey("publish");
         if (!hasPublish) {
-          return null;
+          return (null, []);
         }
       } else {
-        return null;
+        return (null, []);
       }
     }
 
@@ -98,8 +100,7 @@ class PlatformConfig {
       if (data.containsKey("publish")) {
         var iosPublishValidation = ApplePublishConfig.isValid(data["publish"], TargetPlatform.ios);
         if (!iosPublishValidation.$1) {
-          Console.logError("Invalid publish config for iOS -> ${iosPublishValidation.$2 ?? "-"}");
-          exit(1);
+          return (null, [(Console.logError, "Invalid publish config for iOS -> ${iosPublishValidation.$2 ?? "-"}")]);
         }
         pc.iosConfig = IOSConfig(
           publishConfig: ApplePublishConfig.fromMap(data["publish"]),
@@ -114,8 +115,7 @@ class PlatformConfig {
       if (data.containsKey("publish")) {
         var macosPublishValidation = ApplePublishConfig.isValid(data["publish"], TargetPlatform.macos);
         if (!macosPublishValidation.$1) {
-          Console.logError("Invalid publish config for macOS -> ${macosPublishValidation.$2 ?? "-"}");
-          exit(1);
+          return (null, [(Console.logError, "Invalid publish config for macOS -> ${macosPublishValidation.$2 ?? "-"}")]);
         }
         pc.macOSConfig = MacOSConfig(
           publishConfig: ApplePublishConfig.fromMap(data["publish"]),
@@ -130,8 +130,7 @@ class PlatformConfig {
       if (data.containsKey("publish")) {
         var androidPublishValidation = AndroidPublishConfig.isValid(data["publish"], TargetPlatform.android);
         if (!androidPublishValidation.$1) {
-          Console.logError("Invalid publish config for Android -> ${androidPublishValidation.$2 ?? "-"}");
-          exit(1);
+          return (null, [(Console.logError, "Invalid publish config for Android -> ${androidPublishValidation.$2 ?? "-"}")]);
         }
         pc.androidConfig = AndroidConfig(
           publishConfig: AndroidPublishConfig.fromMap(data["publish"]),
@@ -153,6 +152,6 @@ class PlatformConfig {
       pc.windowsConfig = WindowsConfig();
     }
 
-    return pc;
+    return (pc, []);
   }
 }

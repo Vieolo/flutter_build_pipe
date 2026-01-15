@@ -7,7 +7,18 @@ import 'package:build_pipe/utils/console.utils.dart';
 /// Main entry point of the `dart run build_pipe:publish` command
 void main(List<String> args) async {
   // Reading the config
-  BPConfig config = await BPConfig.readPubspec(args);
+  (BPConfig?, List<(Function(String s), String)>) configAndErrors = await BPConfig.readPubspec(args);
+  // Printing the errors that were found while parsing the config
+  // If the error are fatal the config will be null
+  if (configAndErrors.$2.isNotEmpty) {
+    for (var error in configAndErrors.$2) {
+      error.$1(error.$2);
+    }
+  }
+  BPConfig? config = configAndErrors.$1;
+  if (config == null) {
+    exit(1);
+  }
 
   if (config.publishPlatforms.isEmpty) {
     Console.logError("No target platforms were detected for publish. Please add your target platforms to pubspec");

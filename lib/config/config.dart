@@ -44,50 +44,40 @@ class BPConfig {
   });
 
   /// Parsed the config from the map
-  factory BPConfig.fromMap(
+  static (BPConfig?, List<(Function(String s), String)>) fromMap(
     yaml.YamlMap data,
     List<String> args,
     String version,
     String buildVersion,
   ) {
-    yaml.YamlMap platforms = data["platforms"] ?? {};
-    return BPConfig(
-      android: platforms.containsKey("android")
-          ? PlatformConfig.fromMap(
-              platforms["android"],
-              TargetPlatform.android,
-            )
-          : null,
-      ios: platforms.containsKey("ios") ? PlatformConfig.fromMap(platforms["ios"], TargetPlatform.ios) : null,
-      macos: platforms.containsKey("macos")
-          ? PlatformConfig.fromMap(
-              platforms["macos"],
-              TargetPlatform.macos,
-            )
-          : null,
-      linux: platforms.containsKey("linux")
-          ? PlatformConfig.fromMap(
-              platforms["linux"],
-              TargetPlatform.linux,
-            )
-          : null,
-      windows: platforms.containsKey("windows")
-          ? PlatformConfig.fromMap(
-              platforms["windows"],
-              TargetPlatform.windows,
-            )
-          : null,
-      web: platforms.containsKey("web") ? PlatformConfig.fromMap(platforms["web"], TargetPlatform.web) : null,
-      xcodeDerivedKey: data["xcode_derived_data_path_env_key"],
-      cleanFlutter: data["clean_flutter"] ?? true,
-      generateLog: data["generate_log"] ?? true,
-      printstdout: data["print_stdout"] ?? false,
-      preBuildCommand: data["pre_build_command"],
-      postBuildCommand: data["post_build_command"],
-      timestamp: DateTime.now(),
-      version: version,
-      buildVersion: buildVersion,
-      cmdArgs: args,
+    yaml.YamlMap platforms = data["platforms"] ?? yaml.YamlMap();
+    (PlatformConfig?, List<(Function(String s), String)>) android = PlatformConfig.fromMap(platforms, TargetPlatform.android, "android");
+    (PlatformConfig?, List<(Function(String s), String)>) iOS = PlatformConfig.fromMap(platforms, TargetPlatform.ios, "ios");
+    (PlatformConfig?, List<(Function(String s), String)>) macos = PlatformConfig.fromMap(platforms, TargetPlatform.macos, "macos");
+    (PlatformConfig?, List<(Function(String s), String)>) linux = PlatformConfig.fromMap(platforms, TargetPlatform.linux, "linux");
+    (PlatformConfig?, List<(Function(String s), String)>) windows = PlatformConfig.fromMap(platforms, TargetPlatform.windows, "windows");
+    (PlatformConfig?, List<(Function(String s), String)>) web = PlatformConfig.fromMap(platforms, TargetPlatform.web, "web");
+
+    return (
+      BPConfig(
+        android: android.$1,
+        ios: iOS.$1,
+        macos: macos.$1,
+        linux: linux.$1,
+        windows: windows.$1,
+        web: web.$1,
+        xcodeDerivedKey: data["xcode_derived_data_path_env_key"],
+        cleanFlutter: data["clean_flutter"] ?? true,
+        generateLog: data["generate_log"] ?? true,
+        printstdout: data["print_stdout"] ?? false,
+        preBuildCommand: data["pre_build_command"],
+        postBuildCommand: data["post_build_command"],
+        timestamp: DateTime.now(),
+        version: version,
+        buildVersion: buildVersion,
+        cmdArgs: args,
+      ),
+      [...android.$2, ...iOS.$2, ...macos.$2, ...linux.$2, ...windows.$2, ...web.$2],
     );
   }
 
@@ -142,35 +132,33 @@ class BPConfig {
   /// instead, the function will exit with a non-zero exit code if
   /// an error is encountered and a user-facing error message will
   /// be displayed.
-  static Future<BPConfig> readPubspec(List<String> args) async {
-    final rawPubspecFile = File('pubspec.yaml');
+  static Future<(BPConfig?, List<(Function(String s), String)>)> readPubspec(List<String> args, [String? pubspecPath]) async {
+    final rawPubspecFile = File(pubspecPath ?? 'pubspec.yaml');
     if (!(await rawPubspecFile.exists())) {
-      Console.logError("pubspec.yaml file could not be found!");
-      exit(1);
+      return (null, [(Console.logError, "pubspec.yaml file could not be found!")]);
     }
 
     final pubspec = yaml.loadYaml(await rawPubspecFile.readAsString());
     if (!(pubspec as yaml.YamlMap).containsKey("build_pipe")) {
-      Console.logError(
-        "please add the build_pipe configuration to your pubspec file!",
-      );
-      exit(1);
+      return (null, [(Console.logError, "please add the build_pipe configuration to your pubspec file!")]);
     }
 
     var buildPipeConfig = pubspec["build_pipe"];
 
     if (!buildPipeConfig.containsKey("workflows")) {
-      Console.logError("No 'workflows' found in build_pipe config.");
+      List<(Function(String s), String)> messages = [
+        (Console.logError, "No 'workflows' found in build_pipe config."),
+      ];
       // In 0.3.0, the named workflows were introduced which is a breaking change to the config structure.
       // Prior to 0.3.0, the `build_pipe` object contains the config directly, practically for
       // a single workflow. If the `workflows` key is missing and the `platforms` is present, it is an
       // indication that the user is using an older version of the package.
       if (buildPipeConfig.containsKey("platforms")) {
-        Console.logWarning("It seems that you have updated the flutter_build_pipe package to version 0.3.0 or higher. This version contains breaking changes in the configuration.");
-        Console.logWarning("You need to make some changes to your pubspec.yaml file, which should take less than a minute.");
-        Console.logWarning("Please read the migration guide here: https://github.com/vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_0.md");
+        messages.add((Console.logWarning, "It seems that you have updated the flutter_build_pipe package to version 0.3.0 or higher. This version contains breaking changes in the configuration."));
+        messages.add((Console.logWarning, "You need to make some changes to your pubspec.yaml file, which should take less than a minute."));
+        messages.add((Console.logWarning, "Please read the migration guide here: https://github.com/vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_0.md"));
       }
-      exit(1);
+      return (null, messages);
     }
 
     String workflowName = "default";
@@ -185,11 +173,10 @@ class BPConfig {
 
     var workflows = buildPipeConfig["workflows"];
     if (!workflows.containsKey(workflowName)) {
-      Console.logError("Workflow '$workflowName' not found.");
-      exit(1);
+      return (null, [(Console.logError, "Workflow '$workflowName' not found.")]);
     }
 
-    final config = BPConfig.fromMap(
+    final (BPConfig?, List<(Function(String s), String)>) config = BPConfig.fromMap(
       workflows[workflowName],
       downstreamargs,
       pubspec["version"].split("+")[0],
@@ -197,11 +184,8 @@ class BPConfig {
       pubspec["version"].split("+").length > 1 ? pubspec["version"].split("+")[1] : "0",
     );
 
-    if (config.publishPlatforms.isEmpty && config.buildPlatforms.isEmpty) {
-      Console.logError(
-        "No target platforms were detected. Please add your target platforms to pubspec",
-      );
-      exit(1);
+    if (config.$1 != null && config.$1!.publishPlatforms.isEmpty && config.$1!.buildPlatforms.isEmpty) {
+      return (null, [(Console.logError, "No target platforms were detected. Please add your target platforms to pubspec")]);
     }
 
     return config;
