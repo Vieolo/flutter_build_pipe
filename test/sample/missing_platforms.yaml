@@ -1,0 +1,23 @@
+name: your_project
+version: 0.0.1+0000001
+
+build_pipe:
+  workflows:
+    default:
+      clean_flutter: true
+      generate_log: true
+      print_stdout: false
+      pre_build_command: "sh ./pre-build.sh"
+      post_build_command: "sh ./post-build.sh"
+      xcode_derived_data_path_env_key: PATH_TO_XCODE_DERIVED # the env variable key
+    with_empty_build:
+      clean_flutter: true
+      generate_log: true
+      print_stdout: false
+      pre_build_command: "sh ./pre-build.sh"
+      post_build_command: "sh ./post-build.sh"
+      xcode_derived_data_path_env_key: PATH_TO_XCODE_DERIVED # the env variable key
+      platforms:
+        android:
+          build:
+            build_command: ""

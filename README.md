@@ -18,6 +18,7 @@ The pipeline for building & publishing your Flutter app for different target pla
 #### General
 - Specify platforms, build commands, and your preferences in `pubspec.yaml`
 - Logs the output of all build & publish commands for future reviews
+- Define multiple workflows for different build, environment, etc.
 
 #### iOS & macOS
 - Publishing the iOS app to App Store
@@ -34,10 +35,13 @@ The pipeline for building & publishing your Flutter app for different target pla
 Once the configuration is added to your project, you can run the desired command via:
 
 ```bash
-# To build for all given platforms
+# To build for all given platforms in the default workflow
 dart run build_pipe:build
 
-# The build command will funnel all the args passed (e.g., --dart-define) to the build
+# To build for all given platforms in a named workflow
+dart run build_pipe:build --workflow=your_workflow_name
+
+# The build command will funnel all other args passed (e.g., --dart-define) to the build
 # commands on all platforms
 # This allows github actions etc to pass environment vars down to the build cmd without editing the yaml file
 # The build command, as of now, does not have any args or flags of its own
@@ -65,3 +69,7 @@ Read the topics below to setup and configure your project. The configuration is 
 
 #### Misc.
 - [Logging](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/logging/logging_intro.md)
+
+#### Migration
+- [Migration from < 0.3.0](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_0.md)
+

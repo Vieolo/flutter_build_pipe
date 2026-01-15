@@ -1,0 +1,5 @@
+# Using config from version < 0.3.0
+build_pipe:
+  platforms:
+    ios:
+      build_command: flutter build ipa

@@ -23,10 +23,11 @@ class WebUtils {
   /// By adding the version number, the browser will re-fetch the files again
   static Future<void> applyCacheBustPostBuild(BPConfig config) async {
     WebVersioningType versioningType = config.web?.webConfig?.webVersioningType ?? WebVersioningType.hash;
-    String introText = versioningType.isHash ? "Applying web cache busting" : "Applying web cache busting for version: ${config.version}";
+    String introText = versioningType.isHash ? "└── Applying web cache bust" : "└── Applying web cache bust for version: ${config.version}";
 
     List<String> logLines = LogUtils.getActionStartLines(introText);
-    print(introText);
+    stdout.write('\x1B[1A\x1B[2K\r');
+    Console.logInfo(introText);
 
     String vValue = versioningType.isHash ? md5.convert(utf8.encode(DateTime.now().toIso8601String())).toString() : config.version;
 
@@ -85,7 +86,8 @@ class WebUtils {
       }
     }
 
-    Console.logSuccess("√ Web cache busting complete.");
+    stdout.write('\x1B[1A\x1B[2K\r');
+    Console.logSuccess("└── √ Web cache bust is done");
     logLines.addAll(LogUtils.getActionEndLines());
     await LogUtils.appendLogUsingStringList(config, logLines);
   }

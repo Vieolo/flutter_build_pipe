@@ -1,18 +1,5 @@
-# `build_pipe` example pubspec config
-
-```yaml
 name: your_project
 version: 0.0.1+0000001
-
-dependencies:
-    ...
-
-dev_dependencies:
-    build_pipe: {latest_version}
-
-flutter:
-    ...
-
 
 build_pipe:
   workflows:
@@ -55,4 +42,3 @@ build_pipe:
             build_command: flutter build web
             add_version_query_param: true
             query_param_versioning_type: hash
-```

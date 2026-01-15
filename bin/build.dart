@@ -8,16 +8,33 @@ import 'package:build_pipe/utils/xcode.utils.dart';
 
 /// Main entry point of the `dart run build_pipe:build` command
 void main(List<String> args) async {
-  BPConfig config = await BPConfig.readPubspec(args);
+  // Reading the config
+  (BPConfig?, List<(Function(String s), String)>) configAndErrors = await BPConfig.readPubspec(args);
+  // Printing the errors that were found while parsing the config
+  // If the error are fatal the config will be null
+  if (configAndErrors.$2.isNotEmpty) {
+    for (var error in configAndErrors.$2) {
+      error.$1(error.$2);
+    }
+  }
+  BPConfig? config = configAndErrors.$1;
+  if (config == null) {
+    exit(1);
+  }
+
+  if (config.buildPlatforms.isEmpty) {
+    Console.logError("No target platforms were detected for build. Please add your target platforms to pubspec");
+    exit(1);
+  }
 
   Console.logInfo("\nStarting the build process...\n");
   print("The following target platforms are detected:");
-  for (var i = 0; i < config.platforms.length; i++) {
+  for (var i = 0; i < config.buildPlatforms.length; i++) {
     String prefix = "├──";
-    if (i == config.platforms.length - 1) {
+    if (i == config.buildPlatforms.length - 1) {
       prefix = "└──";
     }
-    print("$prefix ${config.platforms[i].name}${i == config.platforms.length - 1 ? "\n" : ""}");
+    print("$prefix ${config.buildPlatforms[i].name}${i == config.buildPlatforms.length - 1 ? "\n" : ""}");
   }
 
   if (config.cleanFlutter || config.needXCodeDerivedCleaning) {
