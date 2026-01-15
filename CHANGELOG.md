@@ -1,3 +1,15 @@
+## 0.3.0
+
+2026-01-15
+
+- Improved the logging to the terminal in both build and publish commands
+- For platforms where the publish command is supported, the publish config can be present without the build config
+
+**Breaking changes**: This version introduces two major breaking changes. You can read a migration guide in the docs.
+
+- This version introduces workflows, allowing you to define multiple build or publish workflows in your pubspec and call them using the `dart run build_pipe:<command_name> --workflow=<workflow_name>` command ([#9](https://github.com/Vieolo/flutter_build_pipe/issues/9))
+- Each platform now has a separate build and publish config, instead of having the build config directly in the platform object 
+
 ## 0.2.7
 
 2025-12-19
