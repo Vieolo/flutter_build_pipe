@@ -174,10 +174,13 @@ class BPConfig {
     }
 
     String workflowName = "default";
+    List<String> downstreamargs = [];
     for (var arg in args) {
       if (arg.startsWith("--workflow=")) {
         workflowName = arg.split("=")[1];
+        continue;
       }
+      downstreamargs.add(arg);
     }
 
     var workflows = buildPipeConfig["workflows"];
@@ -188,7 +191,7 @@ class BPConfig {
 
     final config = BPConfig.fromMap(
       workflows[workflowName],
-      args,
+      downstreamargs,
       pubspec["version"].split("+")[0],
       // just in case the + doesnt exist
       pubspec["version"].split("+").length > 1 ? pubspec["version"].split("+")[1] : "0",
