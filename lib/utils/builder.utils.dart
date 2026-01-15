@@ -13,6 +13,12 @@ class PipeBuilder {
     PlatformConfig platformConfig,
     String userfacingPlatform,
   ) async {
+    // Safety check in case an empty build command is passed
+    // and the lack of build command is not caught by the config parser
+    if (platformConfig.buildCommand.isEmpty) {
+      return (0, <String>[]);
+    }
+
     final buildCommand = platformConfig.buildCommand.split(" ");
     return await ProcessHelper.runCommandUsingConfig(
       executable: buildCommand[0],

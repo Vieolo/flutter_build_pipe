@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:build_pipe/config/android_specific_config.dart';
 import 'package:build_pipe/config/apple_specific_config.dart';
 import 'package:build_pipe/config/web_specific_config.dart';
@@ -48,25 +46,50 @@ class PlatformConfig {
   });
 
   /// Parses a map to `PlatformConfig`
-  static PlatformConfig? fromMap(yaml.YamlMap data, TargetPlatform platform) {
-    // If there is no build command, the instance won't be created
-    if (!data.containsKey("build_command") || data["build_command"].toString().isEmpty) {
-      return null;
+  static (PlatformConfig?, List<(Function(String s), String)>) fromMap(yaml.YamlMap platformsObject, TargetPlatform platform, String key) {
+    if (!platformsObject.containsKey(key)) {
+      return (null, []);
+    }
+    yaml.YamlMap data = platformsObject[key];
+    String? buildCommand;
+    bool hasBuild = false;
+
+    if (data.containsKey("build")) {
+      dynamic buildData = data["build"];
+      if (buildData is Map && buildData.containsKey("build_command") && buildData["build_command"].toString().isNotEmpty) {
+        buildCommand = buildData["build_command"];
+        hasBuild = buildCommand != null && buildCommand.isNotEmpty;
+      }
+    }
+
+    // The build config is optional. A platform config can have only a publish config
+    // At the moment, only iOS and Android publish config is supported
+    // So, if the build config is missing and the platform is not iOS or Android, the config is invalid
+    if (!hasBuild) {
+      if (platform == TargetPlatform.ios || platform == TargetPlatform.android) {
+        bool hasPublish = data.containsKey("publish");
+        if (!hasPublish) {
+          return (null, []);
+        }
+      } else {
+        return (null, []);
+      }
     }
 
     // The base PlatformConfig instance
     PlatformConfig pc = PlatformConfig(
       platform: platform,
-      buildCommand: data["build_command"],
+      buildCommand: buildCommand ?? "",
     );
 
     // -=-=-=-=-=
     // Web
     // -=-=-=-=-=
     if (platform == TargetPlatform.web) {
+      dynamic buildData = data["build"];
       pc.webConfig = WebConfig(
-        addVersionQueryParam: (data['add_version_query_param'] ?? true),
-        webVersioningType: WebVersioningType.getByName(data['query_param_versioning_type']),
+        addVersionQueryParam: (buildData['add_version_query_param'] ?? true),
+        webVersioningType: WebVersioningType.getByName(buildData['query_param_versioning_type']),
       );
     }
 
@@ -77,8 +100,7 @@ class PlatformConfig {
       if (data.containsKey("publish")) {
         var iosPublishValidation = ApplePublishConfig.isValid(data["publish"], TargetPlatform.ios);
         if (!iosPublishValidation.$1) {
-          Console.logError("Invalid publish config for iOS -> ${iosPublishValidation.$2 ?? "-"}");
-          exit(1);
+          return (null, [(Console.logError, "Invalid publish config for iOS -> ${iosPublishValidation.$2 ?? "-"}")]);
         }
         pc.iosConfig = IOSConfig(
           publishConfig: ApplePublishConfig.fromMap(data["publish"]),
@@ -93,8 +115,7 @@ class PlatformConfig {
       if (data.containsKey("publish")) {
         var macosPublishValidation = ApplePublishConfig.isValid(data["publish"], TargetPlatform.macos);
         if (!macosPublishValidation.$1) {
-          Console.logError("Invalid publish config for macOS -> ${macosPublishValidation.$2 ?? "-"}");
-          exit(1);
+          return (null, [(Console.logError, "Invalid publish config for macOS -> ${macosPublishValidation.$2 ?? "-"}")]);
         }
         pc.macOSConfig = MacOSConfig(
           publishConfig: ApplePublishConfig.fromMap(data["publish"]),
@@ -109,8 +130,7 @@ class PlatformConfig {
       if (data.containsKey("publish")) {
         var androidPublishValidation = AndroidPublishConfig.isValid(data["publish"], TargetPlatform.android);
         if (!androidPublishValidation.$1) {
-          Console.logError("Invalid publish config for Android -> ${androidPublishValidation.$2 ?? "-"}");
-          exit(1);
+          return (null, [(Console.logError, "Invalid publish config for Android -> ${androidPublishValidation.$2 ?? "-"}")]);
         }
         pc.androidConfig = AndroidConfig(
           publishConfig: AndroidPublishConfig.fromMap(data["publish"]),
@@ -132,6 +152,6 @@ class PlatformConfig {
       pc.windowsConfig = WindowsConfig();
     }
 
-    return pc;
+    return (pc, []);
   }
 }
