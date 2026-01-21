@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 
@@ -66,11 +67,14 @@ class ProcessHelper {
     // To avoid breaking the behavior on MacOS & Linux, we set the `runInShell` to true only
     // on the Windows
     bool runInShell = false;
-    if (Platform.isWindows) {
-      runInShell = true;
-    }
+    if (Platform.isWindows) runInShell = true;
+
     var process = await Process.start(executable, arguments, runInShell: runInShell);
-    await process.stdout.transform(systemEncoding.decoder).forEach((z) {
+    var mergedStream = StreamGroup.merge([
+      process.stdout.transform(systemEncoding.decoder),
+      process.stderr.transform(systemEncoding.decoder),
+    ]);
+    await mergedStream.forEach((z) {
       if (stdoutWrite) {
         stdout.write(z);
       }
