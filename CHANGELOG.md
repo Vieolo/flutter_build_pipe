@@ -1,3 +1,8 @@
+## 0.3.1
+
+2026-01-21
+- Fixed the error where a build command would result in buffer overflow, commonly seen while building macOS apps
+
 ## 0.3.0
 
 2026-01-15
