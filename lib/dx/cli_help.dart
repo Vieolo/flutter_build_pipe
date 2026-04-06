@@ -19,7 +19,7 @@ void handleHelpFlag(List<String> args, HelpCommand command) {
         help: "Select the workflow to be run. If no workflow is provided, the `default` workflow will be used.",
       )
       ..addOption(
-        "target",
+        "override-target-platforms",
         mandatory: false,
         help:
             "Running only one or multiple target platforms of a workflow, overriding platforms defined for the workflow in the pubspec. If multiple target platforms is required, separate them by a comma (e.g., ios, android)",

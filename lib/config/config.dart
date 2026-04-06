@@ -129,9 +129,8 @@ class BPConfig {
 
   /// Reads the `pubspec.yaml` file, parses, validates, and returns
   /// the config object. No exceptions are thrown from this functions,
-  /// instead, the function will exit with a non-zero exit code if
-  /// an error is encountered and a user-facing error message will
-  /// be displayed.
+  /// instead, a list of user-facing errors will be returned as
+  /// the second object of the record
   static Future<(BPConfig?, List<(Function(String s), String)>)> readPubspec(List<String> args, [String? pubspecPath]) async {
     final rawPubspecFile = File(pubspecPath ?? 'pubspec.yaml');
     if (!(await rawPubspecFile.exists())) {
@@ -162,15 +161,15 @@ class BPConfig {
     }
 
     String workflowName = "default";
-    List<String> targetFilter = [];
+    List<String> overriddenTargetPlatforms = [];
     List<String> downstreamargs = [];
     for (var arg in args) {
       if (arg.startsWith("--workflow=")) {
         workflowName = arg.split("=")[1];
         continue;
       }
-      if (arg.startsWith("--targets=")) {
-        targetFilter = arg.split("=")[1].split(",");
+      if (arg.startsWith("--override-target-platforms=")) {
+        overriddenTargetPlatforms = arg.split("=")[1].split(",");
         continue;
       }
       downstreamargs.add(arg);
@@ -188,9 +187,9 @@ class BPConfig {
       // just in case the + doesnt exist
       pubspec["version"].split("+").length > 1 ? pubspec["version"].split("+")[1] : "0",
     );
-    
-    if (config.$1 != null && targetFilter.isNotEmpty) {
-      config.$1?.applyTargetFilter(targetFilter);      
+
+    if (config.$1 != null && overriddenTargetPlatforms.isNotEmpty) {
+      config.$1?.applyTargetPlatformFilter(overriddenTargetPlatforms);
     }
 
     if (config.$1 != null && config.$1!.publishPlatforms.isEmpty && config.$1!.buildPlatforms.isEmpty) {
@@ -200,7 +199,7 @@ class BPConfig {
     return config;
   }
 
-  void applyTargetFilter(List<String> allowedTargets) {
+  void applyTargetPlatformFilter(List<String> allowedTargets) {
     final targets = allowedTargets.map((e) => e.toLowerCase().trim()).toList();
     if (!targets.contains("android")) android = null;
     if (!targets.contains("ios")) ios = null;
