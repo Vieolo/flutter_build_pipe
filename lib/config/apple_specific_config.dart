@@ -40,21 +40,21 @@ class ApplePublishConfig {
   ///
   /// Should be called before the `fromMap` function
   static (bool, String?) isValid(yaml.YamlMap data, TargetPlatform tp) {
-    if (!data.containsKey("keyID") || data["keyID"] == "" || !Platform.environment.containsKey(data["keyID"]) || Platform.environment["keyID"] == "") {
+    if (!data.containsKey("keyID") || data["keyID"] == "" || !Platform.environment.containsKey(data["keyID"]) || Platform.environment[data["keyID"]] == "") {
       return (
         false,
         "'keyID' env variable is missing from the publish config for ${tp.name} or invalid. You can get the key ID by creating an API key from 'App Store Connect' > 'Users & Access' > 'Integrations'.",
       );
     }
 
-    if (!data.containsKey("issuerID") || data["issuerID"] == "" || !Platform.environment.containsKey(data["issuerID"]) || Platform.environment["issuerID"] == "") {
+    if (!data.containsKey("issuerID") || data["issuerID"] == "" || !Platform.environment.containsKey(data["issuerID"]) || Platform.environment[data["issuerID"]] == "") {
       return (
         false,
         "'issuerID' env variable is missing from the publish config for ${tp.name} or invalid. You can get the issuer ID by visiting 'App Store Connect' > 'Users & Access' > 'Integrations'.",
       );
     }
 
-    if (!data.containsKey("appAppleID") || data["appAppleID"] == "" || !Platform.environment.containsKey(data["appAppleID"]) || Platform.environment["appAppleID"] == "") {
+    if (!data.containsKey("appAppleID") || data["appAppleID"] == "" || !Platform.environment.containsKey(data["appAppleID"]) || Platform.environment[data["appAppleID"]] == "") {
       return (
         false,
         "'appAppleID' env variable is missing from the publish config for ${tp.name} or invalid. You can get the apple ID of your app from the 'App Information' section of your app in App Store Connect.",
