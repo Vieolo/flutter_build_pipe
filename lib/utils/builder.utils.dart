@@ -19,7 +19,7 @@ class PipeBuilder {
       return (0, <String>[]);
     }
 
-    final buildCommand = platformConfig.buildCommand.split(" ");
+    final buildCommand = ProcessHelper.splitCommand(platformConfig.buildCommand);
     return await ProcessHelper.runCommandUsingConfig(
       executable: buildCommand[0],
       // Appending any additional command line arguments passed down from build_pipe:build command

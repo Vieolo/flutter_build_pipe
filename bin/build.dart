@@ -82,9 +82,10 @@ void main(List<String> args) async {
   }
 
   if (config.preBuildCommand != null && config.preBuildCommand!.isNotEmpty) {
+    final preCommand = ProcessHelper.splitCommand(config.preBuildCommand!);
     await ProcessHelper.runCommandUsingConfig(
-      executable: config.preBuildCommand!.split(" ")[0],
-      arguments: config.preBuildCommand!.split(" ").sublist(1),
+      executable: preCommand[0],
+      arguments: preCommand.length > 1 ? preCommand.sublist(1) : [],
       config: config,
       startMessage: "\nRunning pre-build command...",
       clearStartMessage: true,
@@ -97,9 +98,10 @@ void main(List<String> args) async {
   await PipeBuilder.buildAll(config);
 
   if (config.postBuildCommand != null && config.postBuildCommand!.isNotEmpty) {
+    final postCommand = ProcessHelper.splitCommand(config.postBuildCommand!);
     await ProcessHelper.runCommandUsingConfig(
-      executable: config.postBuildCommand!.split(" ")[0],
-      arguments: config.postBuildCommand!.split(" ").sublist(1),
+      executable: postCommand[0],
+      arguments: postCommand.length > 1 ? postCommand.sublist(1) : [],
       config: config,
       startMessage: "\nRunning post-build command...",
       clearStartMessage: true,

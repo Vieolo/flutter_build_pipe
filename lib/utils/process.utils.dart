@@ -17,6 +17,45 @@ String _redact(String output, List<String>? redactions) {
 
 /// The helper class for running commands
 class ProcessHelper {
+  /// Splitting the command while respecting the quoted strings
+  static List<String> splitCommand(String command) {
+    final List<String> result = [];
+    final StringBuffer current = StringBuffer();
+    bool inQuote = false;
+    String quoteChar = '';
+
+    for (int i = 0; i < command.length; i++) {
+      final char = command[i];
+
+      if (inQuote) {
+        if (char == quoteChar) {
+          inQuote = false;
+          quoteChar = '';
+        } else {
+          current.write(char);
+        }
+      } else {
+        if (char == '"' || char == "'") {
+          inQuote = true;
+          quoteChar = char;
+        } else if (char == ' ') {
+          if (current.isNotEmpty) {
+            result.add(current.toString());
+            current.clear();
+          }
+        } else {
+          current.write(char);
+        }
+      }
+    }
+
+    if (current.isNotEmpty) {
+      result.add(current.toString());
+    }
+
+    return result;
+  }
+
   /// Runs a given command and handles the logging
   static Future<(int, List<String>)> runCommand({
     required String executable,
