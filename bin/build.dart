@@ -10,7 +10,7 @@ import 'package:build_pipe/utils/xcode.utils.dart';
 /// Main entry point of the `dart run build_pipe:build` command
 void main(List<String> args) async {
   // Handling the build command's --help flag
-  handleHelpFlag(args, HelpCommand.build);
+  handleCommandHelpFlag(args, HelpCommand.build);
 
   // Reading the config
   (BPConfig?, List<(Function(String s), String)>) configAndErrors = await BPConfig.readPubspec(args);

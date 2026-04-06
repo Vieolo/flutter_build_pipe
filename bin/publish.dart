@@ -8,7 +8,7 @@ import 'package:build_pipe/utils/console.utils.dart';
 /// Main entry point of the `dart run build_pipe:publish` command
 void main(List<String> args) async {
   // Handling the publish command's --help flag
-  handleHelpFlag(args, HelpCommand.publish);
+  handleCommandHelpFlag(args, HelpCommand.publish);
 
   // Reading the config
   (BPConfig?, List<(Function(String s), String)>) configAndErrors = await BPConfig.readPubspec(args);
