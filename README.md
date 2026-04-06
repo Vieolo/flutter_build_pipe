@@ -35,35 +35,38 @@ The pipeline for building & publishing your Flutter app for different target pla
 Once the configuration is added to your project, you can run the desired command via:
 
 ```bash
+##### BUILD #####
+
 # To build for all given platforms in the default workflow
 dart run build_pipe:build
 
 # To build for all given platforms in a named workflow
 dart run build_pipe:build --workflow=your_workflow_name
 
+# To use one (or more) of the platforms defined in a workflow (comma-separated)
+dart run build_pipe:build --override-target-platforms=android,ios,web
+
 # The build command will funnel all other args passed (e.g., --dart-define) to the build
 # commands on all platforms
 # This allows github actions etc to pass environment vars down to the build cmd without editing the yaml file
-# The build command, as of now, does not have any args or flags of its own
 dart run build_pipe:build --dart-define=ENVIRONMENT=prod
 
-# To publish the built app to the given platforms
+##### PUBLISH #####
+
+# To publish the built app to the given platforms in the default workflow
 dart run build_pipe:publish
+
+# To publsih the built app for all given platforms in a named workflow
+dart run build_pipe:publish --workflow=your_workflow_name
+
+# To use one (or more) of the platforms defined in a workflow (comma-separated)
+dart run build_pipe:publish --override-target-platforms=android
+
+
 ```
 
 Read the topics below to setup and configure your project. The configuration is quite simple, and you just need to do it once.
 
-#### Filtering Target Platforms
-
-By default, `build_pipe` builds all platforms defined in the selected workflow. If you need to build only specific platforms, you can use the `--targets` flag:
-
-```bash
-# Build only Android
-dart run build_pipe:build --targets=android
-
-# Build multiple platforms (comma-separated)
-dart run build_pipe:build --targets=android,ios,web
-```
 
 ## Topics
 
