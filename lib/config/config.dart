@@ -162,10 +162,15 @@ class BPConfig {
     }
 
     String workflowName = "default";
+    List<String> targetFilter = [];
     List<String> downstreamargs = [];
     for (var arg in args) {
       if (arg.startsWith("--workflow=")) {
         workflowName = arg.split("=")[1];
+        continue;
+      }
+      if (arg.startsWith("--targets=")) {
+        targetFilter = arg.split("=")[1].split(",");
         continue;
       }
       downstreamargs.add(arg);
@@ -183,11 +188,25 @@ class BPConfig {
       // just in case the + doesnt exist
       pubspec["version"].split("+").length > 1 ? pubspec["version"].split("+")[1] : "0",
     );
+    
+    if (config.$1 != null && targetFilter.isNotEmpty) {
+      config.$1?.applyTargetFilter(targetFilter);      
+    }
 
     if (config.$1 != null && config.$1!.publishPlatforms.isEmpty && config.$1!.buildPlatforms.isEmpty) {
       return (null, [(Console.logError, "No target platforms were detected. Please add your target platforms to pubspec")]);
     }
 
     return config;
+  }
+
+  void applyTargetFilter(List<String> allowedTargets) {
+    final targets = allowedTargets.map((e) => e.toLowerCase().trim()).toList();
+    if (!targets.contains("android")) android = null;
+    if (!targets.contains("ios")) ios = null;
+    if (!targets.contains("macos")) macos = null;
+    if (!targets.contains("linux")) linux = null;
+    if (!targets.contains("windows")) windows = null;
+    if (!targets.contains("web")) web = null;
   }
 }
