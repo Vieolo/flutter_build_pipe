@@ -8,7 +8,7 @@ enum HelpCommand { build, publish }
 /// Handles the print of the content of the `--help` flag
 ///
 /// Once printed, the program will exit with a `0` exit code
-void handleHelpFlag(List<String> args, HelpCommand command) {
+void handleCommandHelpFlag(List<String> args, HelpCommand command) {
   if (args.contains("--help")) {
     var options = ArgParser();
     options
@@ -70,4 +70,28 @@ void handleHelpFlag(List<String> args, HelpCommand command) {
     print(flags.usage);
     exit(0);
   }
+}
+
+void handleMainHelpFlag(List<String> args) {
+  var flags = ArgParser();
+  flags.addFlag("help", help: "Provides additional explanation for the command", negatable: false);
+
+  Console.logInfo("\nflutter_build_pipe is a CLI to help automate the build and publish of a Flutter app for multiple target platforms\n");
+
+  Console.logWarning("USAGE");
+  print("  dart run build_pipe:[COMMAND] [OPTIONS]");
+
+  Console.logWarning("\nEXAMPLE");
+  print("  dart run build_pipe:build --workflow=local_build");
+  print("  dart run build_pipe:publish --workflow=local_publish\n");
+
+  Console.logWarning("Available Commands");
+  print("  build    Builds the app");
+  print("  publish  Publishes the app to external stores");
+
+  Console.logWarning("\nFLAGS");
+  print(flags.usage);
+
+  print('\nUse "dart run build_pipe:[command] --help" for more information about a command.');
+  exit(0);
 }
