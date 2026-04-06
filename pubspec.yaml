@@ -14,6 +14,7 @@ dependencies:
   googleapis: ^15.0.0
   googleapis_auth: ^2.0.0
   async: ^2.13.0
+  args: ^2.7.0
 
 dev_dependencies:
   lints: ^6.0.0
