@@ -5,4 +5,5 @@ library;
 
 // export 'src/build_pipe_base.dart';
 
-// TODO: Export any libraries intended for clients of this package.
+// THERE IS NO PUBLIC EXPORTED CODE
+// FLUTTER_BUILD_PIPE IS ONLY A CLI

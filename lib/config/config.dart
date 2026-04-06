@@ -129,9 +129,8 @@ class BPConfig {
 
   /// Reads the `pubspec.yaml` file, parses, validates, and returns
   /// the config object. No exceptions are thrown from this functions,
-  /// instead, the function will exit with a non-zero exit code if
-  /// an error is encountered and a user-facing error message will
-  /// be displayed.
+  /// instead, a list of user-facing errors will be returned as
+  /// the second object of the record
   static Future<(BPConfig?, List<(Function(String s), String)>)> readPubspec(List<String> args, [String? pubspecPath]) async {
     final rawPubspecFile = File(pubspecPath ?? 'pubspec.yaml');
     if (!(await rawPubspecFile.exists())) {
@@ -162,10 +161,15 @@ class BPConfig {
     }
 
     String workflowName = "default";
+    List<String> overriddenTargetPlatforms = [];
     List<String> downstreamargs = [];
     for (var arg in args) {
       if (arg.startsWith("--workflow=")) {
         workflowName = arg.split("=")[1];
+        continue;
+      }
+      if (arg.startsWith("--override-target-platforms=")) {
+        overriddenTargetPlatforms = arg.split("=")[1].split(",");
         continue;
       }
       downstreamargs.add(arg);
@@ -184,10 +188,29 @@ class BPConfig {
       pubspec["version"].split("+").length > 1 ? pubspec["version"].split("+")[1] : "0",
     );
 
+    if (config.$1 != null && overriddenTargetPlatforms.isNotEmpty) {
+      config.$1?._applyTargetPlatformFilter(overriddenTargetPlatforms);
+    }
+
     if (config.$1 != null && config.$1!.publishPlatforms.isEmpty && config.$1!.buildPlatforms.isEmpty) {
       return (null, [(Console.logError, "No target platforms were detected. Please add your target platforms to pubspec")]);
     }
 
     return config;
+  }
+
+  /// This function will apply the value of `override-target-platforms` cli option
+  ///
+  /// Any target platform which is not mentioned in the value will be removed. If no
+  /// matching value is given, the list of the target platforms will be empty, returning
+  /// an error
+  void _applyTargetPlatformFilter(List<String> allowedTargets) {
+    final targets = allowedTargets.map((e) => e.toLowerCase().trim()).toList();
+    if (!targets.contains("android")) android = null;
+    if (!targets.contains("ios")) ios = null;
+    if (!targets.contains("macos")) macos = null;
+    if (!targets.contains("linux")) linux = null;
+    if (!targets.contains("windows")) windows = null;
+    if (!targets.contains("web")) web = null;
   }
 }

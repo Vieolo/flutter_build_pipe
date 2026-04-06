@@ -53,7 +53,17 @@ dart run build_pipe:publish
 
 Read the topics below to setup and configure your project. The configuration is quite simple, and you just need to do it once.
 
+#### Filtering Target Platforms
 
+By default, `build_pipe` builds all platforms defined in the selected workflow. If you need to build only specific platforms, you can use the `--targets` flag:
+
+```bash
+# Build only Android
+dart run build_pipe:build --targets=android
+
+# Build multiple platforms (comma-separated)
+dart run build_pipe:build --targets=android,ios,web
+```
 
 ## Topics
 
