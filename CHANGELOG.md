@@ -1,3 +1,10 @@
+## 0.3.2
+
+2026-04-06
+- Added the ability to select one (or more) target platform of a workflow by passing the `--override-target-platforms` CLI option
+- Added the much overdue `--help` flag for all commands
+- Fixed a bug in the validation of the publish config of the iOS apps
+
 ## 0.3.1
 
 2026-01-21
