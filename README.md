@@ -11,6 +11,12 @@ and the Flutter guide for
 [developing packages and plugins](https://flutter.dev/to/develop-packages). 
 -->
 
+[![pub package](https://img.shields.io/pub/v/build_pipe.svg)](https://pub.dev/packages/build_pipe)
+[![publisher](https://img.shields.io/badge/publisher-vieolo.com-blue.svg)](https://pub.dev/publishers/vieolo.com)
+[![likes](https://img.shields.io/pub/likes/build_pipe)](https://pub.dev/packages/build_pipe/score)
+[![dm](https://img.shields.io/pub/dm/build_pipe)](https://pub.dev/packages/build_pipe/score)
+![GitHub Repo stars](https://img.shields.io/github/stars/vieolo/flutter_build_pipe)
+
 The pipeline for building & publishing your Flutter app for different target platforms.
 
 ## Features
