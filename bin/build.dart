@@ -1,20 +1,25 @@
 import 'dart:io';
 
+import 'package:build_pipe/dx/cli_help.dart';
 import 'package:build_pipe/utils/builder.utils.dart';
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/process.utils.dart';
+import 'package:build_pipe/utils/validation.utils.dart';
 import 'package:build_pipe/utils/xcode.utils.dart';
 
 /// Main entry point of the `dart run build_pipe:build` command
 void main(List<String> args) async {
+  // Handling the build command's --help flag
+  handleCommandHelpFlag(args, HelpCommand.build);
+
   // Reading the config
-  (BPConfig?, List<(Function(String s), String)>) configAndErrors = await BPConfig.readPubspec(args);
+  (BPConfig?, List<BPConfigValidationError>) configAndErrors = await BPConfig.readPubspec(args);
   // Printing the errors that were found while parsing the config
   // If the error are fatal the config will be null
   if (configAndErrors.$2.isNotEmpty) {
     for (var error in configAndErrors.$2) {
-      error.$1(error.$2);
+      error.print();
     }
   }
   BPConfig? config = configAndErrors.$1;
@@ -78,9 +83,10 @@ void main(List<String> args) async {
   }
 
   if (config.preBuildCommand != null && config.preBuildCommand!.isNotEmpty) {
+    final preCommand = ProcessHelper.splitCommand(config.preBuildCommand!);
     await ProcessHelper.runCommandUsingConfig(
-      executable: config.preBuildCommand!.split(" ")[0],
-      arguments: config.preBuildCommand!.split(" ").sublist(1),
+      executable: preCommand[0],
+      arguments: preCommand.length > 1 ? preCommand.sublist(1) : [],
       config: config,
       startMessage: "\nRunning pre-build command...",
       clearStartMessage: true,
@@ -93,9 +99,10 @@ void main(List<String> args) async {
   await PipeBuilder.buildAll(config);
 
   if (config.postBuildCommand != null && config.postBuildCommand!.isNotEmpty) {
+    final postCommand = ProcessHelper.splitCommand(config.postBuildCommand!);
     await ProcessHelper.runCommandUsingConfig(
-      executable: config.postBuildCommand!.split(" ")[0],
-      arguments: config.postBuildCommand!.split(" ").sublist(1),
+      executable: postCommand[0],
+      arguments: postCommand.length > 1 ? postCommand.sublist(1) : [],
       config: config,
       startMessage: "\nRunning post-build command...",
       clearStartMessage: true,

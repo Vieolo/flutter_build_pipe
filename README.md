@@ -11,6 +11,12 @@ and the Flutter guide for
 [developing packages and plugins](https://flutter.dev/to/develop-packages). 
 -->
 
+[![pub package](https://img.shields.io/pub/v/build_pipe.svg)](https://pub.dev/packages/build_pipe)
+[![publisher](https://img.shields.io/badge/publisher-vieolo.com-blue.svg)](https://pub.dev/publishers/vieolo.com)
+[![likes](https://img.shields.io/pub/likes/build_pipe)](https://pub.dev/packages/build_pipe/score)
+[![dm](https://img.shields.io/pub/dm/build_pipe)](https://pub.dev/packages/build_pipe/score)
+![GitHub Repo stars](https://img.shields.io/github/stars/vieolo/flutter_build_pipe)
+
 The pipeline for building & publishing your Flutter app for different target platforms.
 
 ## Features
@@ -35,24 +41,37 @@ The pipeline for building & publishing your Flutter app for different target pla
 Once the configuration is added to your project, you can run the desired command via:
 
 ```bash
+##### BUILD #####
+
 # To build for all given platforms in the default workflow
 dart run build_pipe:build
 
 # To build for all given platforms in a named workflow
 dart run build_pipe:build --workflow=your_workflow_name
 
+# To use one (or more) of the platforms defined in a workflow (comma-separated)
+dart run build_pipe:build --override-target-platforms=android,ios,web
+
 # The build command will funnel all other args passed (e.g., --dart-define) to the build
 # commands on all platforms
 # This allows github actions etc to pass environment vars down to the build cmd without editing the yaml file
-# The build command, as of now, does not have any args or flags of its own
 dart run build_pipe:build --dart-define=ENVIRONMENT=prod
 
-# To publish the built app to the given platforms
+##### PUBLISH #####
+
+# To publish the built app to the given platforms in the default workflow
 dart run build_pipe:publish
+
+# To publsih the built app for all given platforms in a named workflow
+dart run build_pipe:publish --workflow=your_workflow_name
+
+# To use one (or more) of the platforms defined in a workflow (comma-separated)
+dart run build_pipe:publish --override-target-platforms=android
+
+
 ```
 
 Read the topics below to setup and configure your project. The configuration is quite simple, and you just need to do it once.
-
 
 
 ## Topics

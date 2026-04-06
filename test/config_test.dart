@@ -1,4 +1,5 @@
 import 'package:build_pipe/config/config.dart';
+import 'package:build_pipe/utils/validation.utils.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -6,8 +7,8 @@ void main() {
     test('Should detect the pre-0.3.0 config', () async {
       var configAndErrors = await BPConfig.readPubspec([], "test/sample/pre_0_3_0_config.yaml");
       expect(configAndErrors.$1, isNull);
-      expect(configAndErrors.$2, hasLength(4));
-      expect(configAndErrors.$2.last.$2, "Please read the migration guide here: https://github.com/vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_0.md");
+      expect(configAndErrors.$2.last.message.split("\n"), hasLength(4));
+      expect(configAndErrors.$2.last.message.contains("Please read the migration guide here: https://github.com/vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_0.md"), true);
     });
 
     test('Should parse a valid config', () async {
@@ -26,16 +27,55 @@ void main() {
       var configAndErrors = await BPConfig.readPubspec(["--workflow=something"], "test/sample/valid_all_options.yaml");
       expect(configAndErrors.$1, isNull);
       expect(configAndErrors.$2, hasLength(1));
+      expect(configAndErrors.$2.last.errorCase, BPConfigValidationErrorCase.workflowNotFound);
     });
 
     test('Should detect missing platforms', () async {
       var configAndErrors = await BPConfig.readPubspec([], "test/sample/missing_platforms.yaml");
       expect(configAndErrors.$1, isNull);
       expect(configAndErrors.$2, hasLength(1));
+      expect(configAndErrors.$2.last.errorCase, BPConfigValidationErrorCase.noTargetPlatform);
 
       configAndErrors = await BPConfig.readPubspec(["--workflow=with_empty_build"], "test/sample/missing_platforms.yaml");
       expect(configAndErrors.$1, isNull);
       expect(configAndErrors.$2, hasLength(1));
+      expect(configAndErrors.$2.last.errorCase, BPConfigValidationErrorCase.noTargetPlatform);
     });
+  });
+
+  test('Should filter platforms using --override-target-platforms', () async {
+    var singleTarget = await BPConfig.readPubspec(
+      ["--override-target-platforms=android"],
+      "test/sample/valid_all_options.yaml",
+    );
+    expect(singleTarget.$1, isNotNull);
+    expect(singleTarget.$1!.buildPlatforms, hasLength(1));
+    expect(singleTarget.$1!.buildPlatforms.first.name, "android");
+    expect(singleTarget.$1!.cmdArgs, isNot(contains("--override-target-platforms=android")));
+
+    var multiTarget = await BPConfig.readPubspec(
+      ["--override-target-platforms=android,web,macos"],
+      "test/sample/valid_all_options.yaml",
+    );
+    expect(multiTarget.$1, isNotNull);
+    expect(multiTarget.$1!.buildPlatforms, hasLength(3));
+    final names = multiTarget.$1!.buildPlatforms.map((p) => p.name).toList();
+    expect(names, containsAll(["android", "web", "macos"]));
+
+    var capsTarget = await BPConfig.readPubspec(
+      ["--override-target-platforms=ANDROID"],
+      "test/sample/valid_all_options.yaml",
+    );
+    expect(capsTarget.$1!.buildPlatforms, hasLength(1));
+  });
+
+  test('Should return error if filtered targets result in empty list', () async {
+    var errorTarget = await BPConfig.readPubspec(
+      ["--override-target-platforms=nokia_3310"],
+      "test/sample/valid_all_options.yaml",
+    );
+
+    expect(errorTarget.$1, isNull);
+    expect(errorTarget.$2.last.errorCase, BPConfigValidationErrorCase.noTargetPlatform);
   });
 }

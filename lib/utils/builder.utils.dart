@@ -19,7 +19,7 @@ class PipeBuilder {
       return (0, <String>[]);
     }
 
-    final buildCommand = platformConfig.buildCommand.split(" ");
+    final buildCommand = ProcessHelper.splitCommand(platformConfig.buildCommand);
     return await ProcessHelper.runCommandUsingConfig(
       executable: buildCommand[0],
       // Appending any additional command line arguments passed down from build_pipe:build command
@@ -71,28 +71,27 @@ class PipeBuilder {
   /// Initiates the build for all platforms mentioned
   /// in the config
   static Future<void> buildAll(BPConfig config) async {
-    if (config.ios != null) {
-      await buildIOS(config);
-    }
-
-    if (config.android != null) {
-      await buildAndroid(config);
-    }
-
-    if (config.macos != null) {
-      await buildMacOS(config);
-    }
-
-    if (config.windows != null) {
-      await buildWindows(config);
-    }
-
-    if (config.linux != null) {
-      await buildLinux(config);
-    }
-
-    if (config.web != null) {
-      await buildWeb(config);
+    for (final platform in config.buildPlatforms) {
+      switch (platform) {
+        case TargetPlatform.ios:
+          await buildIOS(config);
+          break;
+        case TargetPlatform.android:
+          await buildAndroid(config);
+          break;
+        case TargetPlatform.macos:
+          await buildMacOS(config);
+          break;
+        case TargetPlatform.windows:
+          await buildWindows(config);
+          break;
+        case TargetPlatform.linux:
+          await buildLinux(config);
+          break;
+        case TargetPlatform.web:
+          await buildWeb(config);
+          break;
+      }
     }
   }
 }

@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:build_pipe/config/platform_specific_config.dart';
-import 'package:build_pipe/utils/console.utils.dart';
+import 'package:build_pipe/utils/validation.utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart' as yaml;
 
@@ -44,19 +44,19 @@ class BPConfig {
   });
 
   /// Parsed the config from the map
-  static (BPConfig?, List<(Function(String s), String)>) fromMap(
+  static (BPConfig?, List<BPConfigValidationError>) fromMap(
     yaml.YamlMap data,
     List<String> args,
     String version,
     String buildVersion,
   ) {
     yaml.YamlMap platforms = data["platforms"] ?? yaml.YamlMap();
-    (PlatformConfig?, List<(Function(String s), String)>) android = PlatformConfig.fromMap(platforms, TargetPlatform.android, "android");
-    (PlatformConfig?, List<(Function(String s), String)>) iOS = PlatformConfig.fromMap(platforms, TargetPlatform.ios, "ios");
-    (PlatformConfig?, List<(Function(String s), String)>) macos = PlatformConfig.fromMap(platforms, TargetPlatform.macos, "macos");
-    (PlatformConfig?, List<(Function(String s), String)>) linux = PlatformConfig.fromMap(platforms, TargetPlatform.linux, "linux");
-    (PlatformConfig?, List<(Function(String s), String)>) windows = PlatformConfig.fromMap(platforms, TargetPlatform.windows, "windows");
-    (PlatformConfig?, List<(Function(String s), String)>) web = PlatformConfig.fromMap(platforms, TargetPlatform.web, "web");
+    (PlatformConfig?, List<BPConfigValidationError>) android = PlatformConfig.fromMap(platforms, TargetPlatform.android, "android");
+    (PlatformConfig?, List<BPConfigValidationError>) iOS = PlatformConfig.fromMap(platforms, TargetPlatform.ios, "ios");
+    (PlatformConfig?, List<BPConfigValidationError>) macos = PlatformConfig.fromMap(platforms, TargetPlatform.macos, "macos");
+    (PlatformConfig?, List<BPConfigValidationError>) linux = PlatformConfig.fromMap(platforms, TargetPlatform.linux, "linux");
+    (PlatformConfig?, List<BPConfigValidationError>) windows = PlatformConfig.fromMap(platforms, TargetPlatform.windows, "windows");
+    (PlatformConfig?, List<BPConfigValidationError>) web = PlatformConfig.fromMap(platforms, TargetPlatform.web, "web");
 
     return (
       BPConfig(
@@ -129,43 +129,72 @@ class BPConfig {
 
   /// Reads the `pubspec.yaml` file, parses, validates, and returns
   /// the config object. No exceptions are thrown from this functions,
-  /// instead, the function will exit with a non-zero exit code if
-  /// an error is encountered and a user-facing error message will
-  /// be displayed.
-  static Future<(BPConfig?, List<(Function(String s), String)>)> readPubspec(List<String> args, [String? pubspecPath]) async {
+  /// instead, a list of user-facing errors will be returned as
+  /// the second object of the record
+  static Future<(BPConfig?, List<BPConfigValidationError>)> readPubspec(List<String> args, [String? pubspecPath]) async {
     final rawPubspecFile = File(pubspecPath ?? 'pubspec.yaml');
     if (!(await rawPubspecFile.exists())) {
-      return (null, [(Console.logError, "pubspec.yaml file could not be found!")]);
+      return (
+        null,
+        [
+          BPConfigValidationError(
+            errorCase: BPConfigValidationErrorCase.pubspecNotFound,
+            message: "pubspec.yaml file could not be found!",
+          ),
+        ],
+      );
     }
 
     final pubspec = yaml.loadYaml(await rawPubspecFile.readAsString());
     if (!(pubspec as yaml.YamlMap).containsKey("build_pipe")) {
-      return (null, [(Console.logError, "please add the build_pipe configuration to your pubspec file!")]);
+      return (
+        null,
+        [
+          BPConfigValidationError(
+            errorCase: BPConfigValidationErrorCase.buildPipeConfigMissing,
+            message: "please add the build_pipe configuration to your pubspec file!",
+          ),
+        ],
+      );
     }
 
     var buildPipeConfig = pubspec["build_pipe"];
 
     if (!buildPipeConfig.containsKey("workflows")) {
-      List<(Function(String s), String)> messages = [
-        (Console.logError, "No 'workflows' found in build_pipe config."),
+      List<String> messages = [
+        "No 'workflows' found in build_pipe config.",
       ];
       // In 0.3.0, the named workflows were introduced which is a breaking change to the config structure.
       // Prior to 0.3.0, the `build_pipe` object contains the config directly, practically for
       // a single workflow. If the `workflows` key is missing and the `platforms` is present, it is an
       // indication that the user is using an older version of the package.
       if (buildPipeConfig.containsKey("platforms")) {
-        messages.add((Console.logWarning, "It seems that you have updated the flutter_build_pipe package to version 0.3.0 or higher. This version contains breaking changes in the configuration."));
-        messages.add((Console.logWarning, "You need to make some changes to your pubspec.yaml file, which should take less than a minute."));
-        messages.add((Console.logWarning, "Please read the migration guide here: https://github.com/vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_0.md"));
+        messages.add("It seems that you have updated the flutter_build_pipe package to version 0.3.0 or higher. This version contains breaking changes in the configuration.");
+        messages.add("You need to make some changes to your pubspec.yaml file, which should take less than a minute.");
+        messages.add("Please read the migration guide here: https://github.com/vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_0.md");
       }
-      return (null, messages);
+
+      return (
+        null,
+        [
+          BPConfigValidationError(
+            errorCase: BPConfigValidationErrorCase.noWorkflowInConfig,
+            message: messages.join("\n"),
+          ),
+        ],
+      );
     }
 
     String workflowName = "default";
+    List<String> overriddenTargetPlatforms = [];
     List<String> downstreamargs = [];
     for (var arg in args) {
       if (arg.startsWith("--workflow=")) {
         workflowName = arg.split("=")[1];
+        continue;
+      }
+      if (arg.startsWith("--override-target-platforms=")) {
+        overriddenTargetPlatforms = arg.split("=")[1].split(",");
         continue;
       }
       downstreamargs.add(arg);
@@ -173,10 +202,18 @@ class BPConfig {
 
     var workflows = buildPipeConfig["workflows"];
     if (!workflows.containsKey(workflowName)) {
-      return (null, [(Console.logError, "Workflow '$workflowName' not found.")]);
+      return (
+        null,
+        [
+          BPConfigValidationError(
+            errorCase: BPConfigValidationErrorCase.workflowNotFound,
+            message: "Workflow '$workflowName' not found.",
+          ),
+        ],
+      );
     }
 
-    final (BPConfig?, List<(Function(String s), String)>) config = BPConfig.fromMap(
+    final (BPConfig?, List<BPConfigValidationError>) config = BPConfig.fromMap(
       workflows[workflowName],
       downstreamargs,
       pubspec["version"].split("+")[0],
@@ -184,10 +221,37 @@ class BPConfig {
       pubspec["version"].split("+").length > 1 ? pubspec["version"].split("+")[1] : "0",
     );
 
+    if (config.$1 != null && overriddenTargetPlatforms.isNotEmpty) {
+      config.$1?._applyTargetPlatformFilter(overriddenTargetPlatforms);
+    }
+
     if (config.$1 != null && config.$1!.publishPlatforms.isEmpty && config.$1!.buildPlatforms.isEmpty) {
-      return (null, [(Console.logError, "No target platforms were detected. Please add your target platforms to pubspec")]);
+      return (
+        null,
+        [
+          BPConfigValidationError(
+            errorCase: BPConfigValidationErrorCase.noTargetPlatform,
+            message: "No target platforms were detected. Please add your target platforms to pubspec",
+          ),
+        ],
+      );
     }
 
     return config;
+  }
+
+  /// This function will apply the value of `override-target-platforms` cli option
+  ///
+  /// Any target platform which is not mentioned in the value will be removed. If no
+  /// matching value is given, the list of the target platforms will be empty, returning
+  /// an error
+  void _applyTargetPlatformFilter(List<String> allowedTargets) {
+    final targets = allowedTargets.map((e) => e.toLowerCase().trim()).toList();
+    if (!targets.contains("android")) android = null;
+    if (!targets.contains("ios")) ios = null;
+    if (!targets.contains("macos")) macos = null;
+    if (!targets.contains("linux")) linux = null;
+    if (!targets.contains("windows")) windows = null;
+    if (!targets.contains("web")) web = null;
   }
 }
