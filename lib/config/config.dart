@@ -189,7 +189,7 @@ class BPConfig {
     );
 
     if (config.$1 != null && overriddenTargetPlatforms.isNotEmpty) {
-      config.$1?.applyTargetPlatformFilter(overriddenTargetPlatforms);
+      config.$1?._applyTargetPlatformFilter(overriddenTargetPlatforms);
     }
 
     if (config.$1 != null && config.$1!.publishPlatforms.isEmpty && config.$1!.buildPlatforms.isEmpty) {
@@ -199,7 +199,12 @@ class BPConfig {
     return config;
   }
 
-  void applyTargetPlatformFilter(List<String> allowedTargets) {
+  /// This function will apply the value of `override-target-platforms` cli option
+  ///
+  /// Any target platform which is not mentioned in the value will be removed. If no
+  /// matching value is given, the list of the target platforms will be empty, returning
+  /// an error
+  void _applyTargetPlatformFilter(List<String> allowedTargets) {
     final targets = allowedTargets.map((e) => e.toLowerCase().trim()).toList();
     if (!targets.contains("android")) android = null;
     if (!targets.contains("ios")) ios = null;
