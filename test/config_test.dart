@@ -1,4 +1,5 @@
 import 'package:build_pipe/config/config.dart';
+import 'package:build_pipe/utils/validation.utils.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -6,8 +7,8 @@ void main() {
     test('Should detect the pre-0.3.0 config', () async {
       var configAndErrors = await BPConfig.readPubspec([], "test/sample/pre_0_3_0_config.yaml");
       expect(configAndErrors.$1, isNull);
-      expect(configAndErrors.$2, hasLength(4));
-      expect(configAndErrors.$2.last.$2, "Please read the migration guide here: https://github.com/vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_0.md");
+      expect(configAndErrors.$2.last.message.split("\n"), hasLength(4));
+      expect(configAndErrors.$2.last.message.contains("Please read the migration guide here: https://github.com/vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_0.md"), true);
     });
 
     test('Should parse a valid config', () async {
@@ -26,16 +27,19 @@ void main() {
       var configAndErrors = await BPConfig.readPubspec(["--workflow=something"], "test/sample/valid_all_options.yaml");
       expect(configAndErrors.$1, isNull);
       expect(configAndErrors.$2, hasLength(1));
+      expect(configAndErrors.$2.last.errorCase, BPConfigValidationErrorCase.workflowNotFound);
     });
 
     test('Should detect missing platforms', () async {
       var configAndErrors = await BPConfig.readPubspec([], "test/sample/missing_platforms.yaml");
       expect(configAndErrors.$1, isNull);
       expect(configAndErrors.$2, hasLength(1));
+      expect(configAndErrors.$2.last.errorCase, BPConfigValidationErrorCase.noTargetPlatform);
 
       configAndErrors = await BPConfig.readPubspec(["--workflow=with_empty_build"], "test/sample/missing_platforms.yaml");
       expect(configAndErrors.$1, isNull);
       expect(configAndErrors.$2, hasLength(1));
+      expect(configAndErrors.$2.last.errorCase, BPConfigValidationErrorCase.noTargetPlatform);
     });
   });
 
@@ -72,6 +76,6 @@ void main() {
     );
 
     expect(errorTarget.$1, isNull);
-    expect(errorTarget.$2.last.$2, contains("No target platforms were detected"));
+    expect(errorTarget.$2.last.errorCase, BPConfigValidationErrorCase.noTargetPlatform);
   });
 }

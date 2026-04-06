@@ -5,6 +5,7 @@ import 'package:build_pipe/utils/builder.utils.dart';
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/process.utils.dart';
+import 'package:build_pipe/utils/validation.utils.dart';
 import 'package:build_pipe/utils/xcode.utils.dart';
 
 /// Main entry point of the `dart run build_pipe:build` command
@@ -13,12 +14,12 @@ void main(List<String> args) async {
   handleCommandHelpFlag(args, HelpCommand.build);
 
   // Reading the config
-  (BPConfig?, List<(Function(String s), String)>) configAndErrors = await BPConfig.readPubspec(args);
+  (BPConfig?, List<BPConfigValidationError>) configAndErrors = await BPConfig.readPubspec(args);
   // Printing the errors that were found while parsing the config
   // If the error are fatal the config will be null
   if (configAndErrors.$2.isNotEmpty) {
     for (var error in configAndErrors.$2) {
-      error.$1(error.$2);
+      error.print();
     }
   }
   BPConfig? config = configAndErrors.$1;
