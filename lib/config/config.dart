@@ -139,22 +139,25 @@ class BPConfig {
 
   /// Reads the `output` field of a workflow
   ///
-  /// Before `output`, the workflows had `print_stdout`, which is still read when `output` is missing.
-  /// `print_stdout: true` printed the whole output of the commands, which is now `output: verbose`
+  /// Before `output`, the workflows had `print_stdout`, which is no longer read and has no effect.
+  /// Since it only changed what is shown, not what is run, it is a warning rather than an error
   static (OutputMode?, List<BPConfigValidationError>) _outputFromMap(yaml.YamlMap data) {
     List<BPConfigValidationError> warnings = [];
     if (data.containsKey("print_stdout")) {
       warnings.add(
         BPConfigValidationError(
           errorCase: BPConfigValidationErrorCase.printStdoutReplaced,
-          message: "'print_stdout' is replaced by 'output' and will be removed in a future version. Use 'output: verbose' instead of 'print_stdout: true', or remove 'print_stdout: false'",
+          message: [
+            "'print_stdout' is no longer supported and has no effect. It is replaced by 'output', e.g. 'output: verbose' to print the whole output of the commands.",
+            "Please update the workflow, using the migration guide: https://github.com/vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_to_0_4.md",
+          ].join("\n"),
           isWarning: true,
         ),
       );
     }
 
     if (data["output"] == null) {
-      return (data["print_stdout"] == true ? OutputMode.verbose : OutputMode.auto, warnings);
+      return (OutputMode.auto, warnings);
     }
 
     (OutputMode?, String?) parsed = OutputMode.parse(data["output"].toString());

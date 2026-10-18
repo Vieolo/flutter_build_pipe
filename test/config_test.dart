@@ -111,11 +111,12 @@ void main() {
       expect(configAndErrors.$2.single.message, contains("auto, interactive, plain, verbose, json"));
     });
 
-    test('print_stdout is still read when output is missing, with a warning', () {
-      var verbose = parseWorkflow("print_stdout: true");
-      expect(verbose.$1!.output, OutputMode.verbose);
-      expect(verbose.$2.single.errorCase, BPConfigValidationErrorCase.printStdoutReplaced);
-      expect(verbose.$2.single.isWarning, isTrue);
+    test('print_stdout has no effect, and is warned about with a link to the migration guide', () {
+      var withPrintStdout = parseWorkflow("print_stdout: true");
+      expect(withPrintStdout.$1!.output, OutputMode.auto);
+      expect(withPrintStdout.$2.single.errorCase, BPConfigValidationErrorCase.printStdoutReplaced);
+      expect(withPrintStdout.$2.single.isWarning, isTrue);
+      expect(withPrintStdout.$2.single.message, contains("doc/migration/0_3_to_0_4.md"));
 
       expect(parseWorkflow("print_stdout: false").$1!.output, OutputMode.auto);
       expect(parseWorkflow("print_stdout: true\noutput: plain").$1!.output, OutputMode.plain);
