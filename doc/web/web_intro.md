@@ -3,7 +3,7 @@
 #### Cache busting
 The Flutter web builds, unlike more mature frontend frameworks, do not generate static files with unique URIs. As the result, the Flutter web apps are cached by the browser, practically preventing you from pushing an update to your existing users. You can read more about it [here](https://docs.flutter.dev/platform-integration/web/faq#why-doesnt-my-app-update-immediately-after-its-deployed)
 
-To circumvent this, `build_pipe` will adjust your build files to append a query paramter with either a random hash or your application's version. Our solution is highly inspired by [github.com/doonfrs
+To circumvent this, `build_pipe` will adjust your build files to append a query parameter with either a random hash or your application's version. Our solution is highly inspired by [github.com/doonfrs
 flutter-build-web-cache-problem](https://github.com/doonfrs/flutter-build-web-cache-problem).
 
 `build_pipe` can either add a random hash or the version number of your app as the query param. You can select the type of query param using `query_param_versioning_type`. This value is set to `hash` by default.
@@ -18,3 +18,5 @@ Please note that our approach is fragile by nature since it depends on the gener
   - `Flutter v3.38.5`
 
 You can prevent this by setting the `add_version_query_param` field in your web platform to `false`
+
+The cache bust runs as its own step, after the web build, and is shown under the web platform as `Cache bust (hash)` or `Cache bust (version x.y.z)`. It is skipped when the web build fails. It looks for the files in `build/web`, so a file it cannot find, e.g. when the build is written somewhere else, is reported as a warning.

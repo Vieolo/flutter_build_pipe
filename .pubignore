@@ -1,1 +1,3 @@
 .vscode/
+/agent.dart
+/macos_publish.md

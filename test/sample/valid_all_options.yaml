@@ -6,14 +6,24 @@ build_pipe:
     default:
       clean_flutter: true
       generate_log: true
-      print_stdout: false
-      pre_build_command: "sh ./pre-build.sh"
-      post_build_command: "sh ./post-build.sh"
+      output: plain
+      pre_platform_run:
+        build: "sh ./pre-build.sh"
+      post_platform_run:
+        build:
+          on_success: "sh ./post-build.sh"
+          finally: "sh ./cleanup.sh"
+        publish:
+          finally: "sh ./cleanup-publish.sh"
       xcode_derived_data_path_env_key: PATH_TO_XCODE_DERIVED # the env variable key
       platforms:
         ios:
           build:
+            pre_command: "sh ./ios-pre.sh"
             build_command: flutter build ipa
+            post_command:
+              on_success: "sh ./ios-upload-symbols.sh"
+              finally: "sh ./ios-cleanup.sh"
           publish:
             keyID: IOS_APP_KEY_ID # the env variable key
             issuerID: IOS_APP_ISSUER_ID # the env variable key

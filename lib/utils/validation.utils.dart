@@ -9,18 +9,30 @@ enum BPConfigValidationErrorCase {
   noWorkflowInConfig,
   workflowNotFound,
   noTargetPlatform,
+  invalidOutput,
+  printStdoutReplaced,
+  invalidHook,
+  replacedHookKeys,
 }
 
 class BPConfigValidationError {
   BPConfigValidationErrorCase errorCase;
   String message;
 
+  /// A warning does not stop the command, e.g. when a deprecated field is used
+  bool isWarning;
+
   BPConfigValidationError({
     required this.errorCase,
     required this.message,
+    this.isWarning = false,
   });
 
   void print() {
-    Console.logError(message);
+    if (isWarning) {
+      Console.logWarning(message);
+    } else {
+      Console.logError(message);
+    }
   }
 }

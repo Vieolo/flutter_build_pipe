@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:build_pipe/runner/output_mode.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 
 enum HelpCommand { build, publish }
@@ -17,6 +18,19 @@ void handleCommandHelpFlag(List<String> args, HelpCommand command) {
         mandatory: false,
         defaultsTo: "default",
         help: "Select the workflow to be run. If no workflow is provided, the `default` workflow will be used.",
+      )
+      ..addOption(
+        "bp-output",
+        mandatory: false,
+        allowed: OutputMode.values.map((OutputMode mode) => mode.name),
+        allowedHelp: {
+          "auto": "interactive in a terminal, plain anywhere else, including a CI",
+          "interactive": "A tree of the steps that updates in place",
+          "plain": "One line per step, e.g. for a CI",
+          "verbose": "Like plain, along with the whole output of the commands",
+          "json": "One JSON object per line, for scripts and agents",
+        },
+        help: "How the run is shown. Overrides the `output` field of the workflow, which defaults to `auto`.",
       )
       ..addOption(
         "override-target-platforms",
@@ -39,7 +53,7 @@ void handleCommandHelpFlag(List<String> args, HelpCommand command) {
       print(
         "  Runs the build commands of all target platforms of a workflow. "
         "The workflow can be selected via the `--workflow` arg, else the `default` workflow is used. "
-        "The options, flags, and args defined blow will be processed by the command directly. "
+        "The options, flags, and args defined below will be processed by the command directly. "
         "Any unknown and extra arg provided, will be piped downstream to the platform-specific build command of Flutter.",
       );
     } else {

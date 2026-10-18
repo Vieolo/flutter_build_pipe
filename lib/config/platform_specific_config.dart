@@ -1,5 +1,6 @@
 import 'package:build_pipe/config/android_specific_config.dart';
 import 'package:build_pipe/config/apple_specific_config.dart';
+import 'package:build_pipe/config/hook_config.dart';
 import 'package:build_pipe/config/web_specific_config.dart';
 import 'package:build_pipe/utils/validation.utils.dart';
 import 'package:yaml/yaml.dart' as yaml;
@@ -23,6 +24,12 @@ class PlatformConfig {
   TargetPlatform platform;
   String buildCommand;
 
+  /// The `pre_command` and `post_command` of the `build` of the platform
+  HookCommands buildHooks;
+
+  /// The `pre_command` and `post_command` of the `publish` of the platform
+  HookCommands publishHooks;
+
   // Platform config
   //
   // These instances will only hold platform specific
@@ -37,6 +44,8 @@ class PlatformConfig {
   PlatformConfig({
     required this.platform,
     required this.buildCommand,
+    this.buildHooks = const HookCommands(),
+    this.publishHooks = const HookCommands(),
     this.iosConfig,
     this.macOSConfig,
     this.androidConfig,
@@ -76,10 +85,19 @@ class PlatformConfig {
       }
     }
 
+    // The hooks are read before the rest, since a mistake in them stops the whole command
+    (HookCommands?, List<BPConfigValidationError>) buildHooks = HookCommands.fromPlatformBlock(data["build"], "platforms.$key.build");
+    (HookCommands?, List<BPConfigValidationError>) publishHooks = HookCommands.fromPlatformBlock(data["publish"], "platforms.$key.publish");
+    if (buildHooks.$1 == null || publishHooks.$1 == null) {
+      return (null, [...buildHooks.$2, ...publishHooks.$2]);
+    }
+
     // The base PlatformConfig instance
     PlatformConfig pc = PlatformConfig(
       platform: platform,
       buildCommand: buildCommand ?? "",
+      buildHooks: buildHooks.$1!,
+      publishHooks: publishHooks.$1!,
     );
 
     // -=-=-=-=-=
