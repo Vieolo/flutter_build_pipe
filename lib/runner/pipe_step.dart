@@ -1,4 +1,18 @@
+import 'package:build_pipe/runner/pipe_events.dart';
 import 'package:build_pipe/utils/process.utils.dart';
+
+/// When a step runs, given what has happened before it
+enum RunCondition {
+  /// Unless a failure before it has stopped it: a failed step of its group, or a failed step of a
+  /// stage that stops the run
+  notStopped,
+
+  /// Only when no step of the run has failed so far, e.g. an `on_success` hook
+  nothingFailed,
+
+  /// Whatever has happened before it, e.g. a `finally` hook. A step of a group runs once its group has started
+  always,
+}
 
 /// A unit of work in the pipeline
 ///
@@ -7,7 +21,9 @@ sealed class PipeStep {
   /// The name of the step shown to the user, e.g. `flutter clean` or `iOS`
   final String label;
 
-  PipeStep(this.label);
+  final RunCondition runIf;
+
+  PipeStep(this.label, {this.runIf = RunCondition.notStopped});
 }
 
 /// A step that runs a single command and fails when the command exits with a non-zero code
@@ -23,6 +39,7 @@ class CommandStep extends PipeStep {
     required this.executable,
     required this.arguments,
     this.redactions = const [],
+    super.runIf,
   });
 
   /// Creates the step from a command written as a single string, such as the `build_command` of a platform
@@ -45,17 +62,18 @@ class ActionStep extends PipeStep {
   /// The work of the step. It returns the error when the step has failed
   final Future<StepError?> Function(StepContext context) action;
 
-  ActionStep(super.label, this.action);
+  ActionStep(super.label, this.action, {super.runIf});
 }
 
 /// Steps that belong together, such as building a platform and then processing the build output
 ///
-/// The steps of the group run in order, and the first failure skips the rest of the group. To its stage,
-/// the group is a single step, which fails when any of its steps fails
+/// The steps of the group run in order, and the first failure skips the rest of the group, except for
+/// the steps that run [RunCondition.always]. To its stage, the group is a single step, which fails when
+/// any of its steps fails
 class StepGroup extends PipeStep {
   final List<PipeStep> steps;
 
-  StepGroup(super.label, this.steps);
+  StepGroup(super.label, this.steps, {super.runIf});
 }
 
 /// The reason a step has failed
@@ -86,11 +104,20 @@ abstract interface class StepContext {
   ///
   /// The output is shown and logged like that of a [CommandStep], and the [redactions] are applied to
   /// the command, its output, and the returned result
+  ///
+  /// The [environment] is added to the env variables of build_pipe for the command
   Future<(CommandResult?, CommandError?)> runCommand(
     String executable,
     List<String> arguments, {
     List<String> redactions,
+    Map<String, String> environment,
   });
+
+  /// The state of this step, e.g. to see how the steps before it in its group have done
+  StepState get state;
+
+  /// All the steps of the run, as they are at the moment, in the order they are shown
+  List<StepState> get runSteps;
 
   /// Shows what the step is doing at the moment, e.g. `Uploading the build file`
   void status(String text);

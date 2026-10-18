@@ -93,8 +93,8 @@ class ApplePublishConfig {
   }
 
   /// The step uploading the build artifact to the iOS App Store
-  PipeStep uploadToIOSStep(BPConfig config) {
-    return ActionStep("iOS - App Store", (StepContext context) => _uploadToIOS(config, context));
+  PipeStep uploadToIOSStep(BPConfig config, {String label = "iOS - App Store"}) {
+    return ActionStep(label, (StepContext context) => _uploadToIOS(config, context));
   }
 
   Future<StepError?> _uploadToIOS(BPConfig config, StepContext context) async {

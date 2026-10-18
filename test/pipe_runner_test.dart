@@ -254,4 +254,76 @@ void main() {
       expect(reporter.events.whereType<StepStatusChanged>().single.text, "working");
     });
   });
+
+  group('RunCondition', () {
+    ActionStep onSuccess(String label) => ActionStep(label, (StepContext context) async => null, runIf: RunCondition.nothingFailed);
+    ActionStep always(String label) => ActionStep(label, (StepContext context) async => null, runIf: RunCondition.always);
+
+    test('nothingFailed runs only when no step of the run has failed, even in a stage that continues', () async {
+      PipeRunResult failed = await PipeRunner([RecordingReporter()]).run(testInfo, [
+        PipeStage("Build", steps: [failingAction("iOS"), succeedingAction("Android")], onFailure: FailurePolicy.continueRun),
+        PipeStage("Post-build", steps: [onSuccess("on_success")]),
+      ]);
+      expect(statuses(failed)["on_success"], StepStatus.skipped);
+      expect(failed.steps.last.skipReason, "an earlier step has failed");
+
+      PipeRunResult succeeded = await PipeRunner([RecordingReporter()]).run(testInfo, [
+        PipeStage("Build", steps: [succeedingAction("iOS")], onFailure: FailurePolicy.continueRun),
+        PipeStage("Post-build", steps: [onSuccess("on_success")]),
+      ]);
+      expect(statuses(succeeded)["on_success"], StepStatus.succeeded);
+    });
+
+    test('always runs after a stage has stopped the run', () async {
+      PipeRunResult result = await PipeRunner([RecordingReporter()]).run(testInfo, [
+        PipeStage("Pre-build", steps: [failingAction("pre")]),
+        PipeStage("Build", steps: [succeedingAction("iOS")]),
+        PipeStage("Post-build", steps: [onSuccess("on_success"), always("finally")]),
+      ]);
+      expect(statuses(result), {"pre": StepStatus.failed, "iOS": StepStatus.skipped, "on_success": StepStatus.skipped, "finally": StepStatus.succeeded});
+    });
+
+    test('always runs in a group after a step of the group has failed', () async {
+      PipeRunResult result = await PipeRunner([RecordingReporter()]).run(testInfo, [
+        PipeStage(
+          "Build",
+          onFailure: FailurePolicy.continueRun,
+          steps: [
+            StepGroup("iOS", [succeedingAction("pre_command"), failingAction("Build"), succeedingAction("on_success"), always("finally")]),
+          ],
+        ),
+      ]);
+      Map<String, StepState> steps = {for (StepState s in result.allSteps) s.step.label: s};
+      expect(steps["on_success"]!.status, StepStatus.skipped);
+      expect(steps["on_success"]!.skipReason, "Build has failed");
+      expect(steps["finally"]!.status, StepStatus.succeeded);
+      expect(steps["iOS"]!.error!.message, "Build has failed");
+    });
+
+    test('a failed finally fails its group, and the first failure names the error', () async {
+      PipeRunResult result = await PipeRunner([RecordingReporter()]).run(testInfo, [
+        PipeStage(
+          "Build",
+          steps: [
+            StepGroup("iOS", [succeedingAction("Build"), ActionStep("finally", (StepContext context) async => const StepError("cleanup failed"), runIf: RunCondition.always)]),
+          ],
+        ),
+      ]);
+      expect(result.steps.single.status, StepStatus.failed);
+      expect(result.steps.single.error!.message, "finally has failed");
+    });
+
+    test('always in a group does not run when the group itself is skipped', () async {
+      PipeRunResult result = await PipeRunner([RecordingReporter()]).run(testInfo, [
+        PipeStage("Pre-build", steps: [failingAction("pre")]),
+        PipeStage(
+          "Build",
+          steps: [
+            StepGroup("iOS", [succeedingAction("Build"), always("finally")]),
+          ],
+        ),
+      ]);
+      expect(result.allSteps.skip(1).map((StepState s) => s.status), everyElement(StepStatus.skipped));
+    });
+  });
 }

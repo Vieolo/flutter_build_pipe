@@ -69,10 +69,13 @@ class ProcessHelper {
   ///
   /// A command that exits with a non-zero code is not an error here, since only the caller knows
   /// whether the failure is acceptable. The error is returned only when the command could not be started
+  ///
+  /// The [environment] is added to the env variables of build_pipe for the command
   static Future<(CommandResult?, CommandError?)> run(
     String executable,
     List<String> arguments, {
     void Function(String line)? onOutput,
+    Map<String, String>? environment,
   }) async {
     // `runInShell` allows commands like 'flutter pub get' work on Windows by running through cmd.
     // To avoid breaking the behavior on MacOS & Linux, we set the `runInShell` to true only
@@ -81,7 +84,7 @@ class ProcessHelper {
 
     Process process;
     try {
-      process = await Process.start(executable, arguments, runInShell: runInShell);
+      process = await Process.start(executable, arguments, runInShell: runInShell, environment: environment);
     } on ProcessException catch (e) {
       return (null, CommandError("Could not start '$executable': ${e.message}"));
     }

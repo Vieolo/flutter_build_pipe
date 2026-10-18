@@ -19,6 +19,9 @@ import 'package:path/path.dart' as p;
 class PipeRunner {
   final List<PipeReporter> reporters;
 
+  /// The steps of the stages of the current run
+  List<StepState> _steps = [];
+
   PipeRunner(this.reporters);
 
   /// Runs the [stages] with the reporters chosen by the [config], and returns the outcome
@@ -72,19 +75,22 @@ class PipeRunner {
       }
     }
 
+    _steps = states;
     Stopwatch stopwatch = Stopwatch()..start();
     _emit(RunStarted(info: info, steps: states, startedAt: DateTime.now()));
 
-    bool stopped = false;
+    // Set once a failed step of a stage has stopped the run
+    String? stopReason;
     for (StepState state in states) {
-      if (stopped) {
-        _skip(state, "an earlier step has failed");
+      String? skipReason = _skipReason(state, stopReason);
+      if (skipReason != null) {
+        _skip(state, skipReason);
         continue;
       }
 
       await _runStep(state);
       if (state.status == StepStatus.failed && state.stage.onFailure == FailurePolicy.stopRun) {
-        stopped = true;
+        stopReason ??= "an earlier step has failed";
       }
     }
 
@@ -126,20 +132,37 @@ class PipeRunner {
     _emit(StepFinished(state));
   }
 
-  /// Runs the steps of a group in order, until one of them fails
+  /// Runs the steps of a group in order. Once one of them fails, only the steps that run [RunCondition.always] are run
   Future<StepError?> _runGroup(StepState group) async {
     StepState? failed;
     for (StepState child in group.children) {
-      if (failed != null) {
-        _skip(child, "${failed.step.label} has failed");
+      String? skipReason = _skipReason(child, failed == null ? null : "${failed.step.label} has failed");
+      if (skipReason != null) {
+        _skip(child, skipReason);
         continue;
       }
       await _runStep(child);
       if (child.status == StepStatus.failed) {
-        failed = child;
+        failed ??= child;
       }
     }
     return failed == null ? null : StepError("${failed.step.label} has failed");
+  }
+
+  /// Why the [state] is skipped, or null when it runs
+  ///
+  /// The [stopReason] is set when a failure before the step, in its group or in a stage that stops the
+  /// run, has stopped the steps after it
+  String? _skipReason(StepState state, String? stopReason) {
+    switch (state.step.runIf) {
+      case RunCondition.notStopped:
+        return stopReason;
+      case RunCondition.nothingFailed:
+        bool hasFailure = _steps.any((StepState s) => s.tree.any((StepState t) => t.status == StepStatus.failed));
+        return hasFailure ? "an earlier step has failed" : null;
+      case RunCondition.always:
+        return null;
+    }
   }
 
   /// Runs the work of a step that is not a group
@@ -196,10 +219,17 @@ class _RunnerStepContext implements StepContext {
   _RunnerStepContext(this._runner, this._state);
 
   @override
+  StepState get state => _state;
+
+  @override
+  List<StepState> get runSteps => [for (StepState step in _runner._steps) ...step.tree];
+
+  @override
   Future<(CommandResult?, CommandError?)> runCommand(
     String executable,
     List<String> arguments, {
     List<String> redactions = const [],
+    Map<String, String> environment = const {},
   }) async {
     _runner._emit(CommandStarted(_state, _redact([executable, ...arguments].map(_quoteArgument).join(" "), redactions)));
 
@@ -207,6 +237,7 @@ class _RunnerStepContext implements StepContext {
     (CommandResult?, CommandError?) outcome = await ProcessHelper.run(
       executable,
       arguments,
+      environment: environment,
       onOutput: (String line) {
         String redacted = _redact(line, redactions);
         redactedOutput.add(redacted);

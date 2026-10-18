@@ -11,6 +11,8 @@ enum BPConfigValidationErrorCase {
   noTargetPlatform,
   invalidOutput,
   printStdoutReplaced,
+  invalidHook,
+  replacedHookKeys,
 }
 
 class BPConfigValidationError {

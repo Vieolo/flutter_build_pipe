@@ -97,8 +97,8 @@ class AndroidPublishConfig {
   ///
   /// The user should create the correct credentials using GCP, downloads
   /// the JSON api key and place it in the path
-  PipeStep uploadToPlayStoreStep(BPConfig config) {
-    return ActionStep("Android - Play Store", (StepContext context) => _uploadToPlayStore(config, context));
+  PipeStep uploadToPlayStoreStep(BPConfig config, {String label = "Android - Play Store"}) {
+    return ActionStep(label, (StepContext context) => _uploadToPlayStore(config, context));
   }
 
   Future<StepError?> _uploadToPlayStore(BPConfig config, StepContext context) async {
