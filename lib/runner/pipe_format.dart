@@ -21,6 +21,11 @@ class PipeFormat {
     return "[$minutes:$seconds]";
   }
 
+  /// The lines at the top of the output, describing the run
+  static List<String> title(PipeRunInfo info) {
+    return ["command: ${info.command}", "workflow: ${info.workflow}", "version: ${info.version}"];
+  }
+
   /// Prepares a line of the output of a command to be shown in the terminal
   ///
   /// The escape sequences are removed, since the cursor movements of a command would break the

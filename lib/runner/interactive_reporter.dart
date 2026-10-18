@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:build_pipe/runner/pipe_events.dart';
 import 'package:build_pipe/runner/pipe_format.dart';
 import 'package:build_pipe/runner/pipe_step.dart';
+import 'package:build_pipe/utils/console.utils.dart';
 import 'package:mansil/mansil.dart';
 
 /// Shows the run as a tree of stages and steps, updated in place, for terminals
@@ -48,8 +49,13 @@ class InteractiveReporter implements PipeReporter {
     this.logFilePath,
     StringSink? out,
     ({int columns, int lines}) Function()? terminalSize,
-  }) : _out = out ?? stdout,
-       _terminalSize = terminalSize ?? (() => (columns: stdout.terminalColumns, lines: stdout.terminalLines));
+  }) : _out = out ?? SafeStdout.instance,
+       _terminalSize = terminalSize ?? _stdoutSize;
+
+  /// The size of the terminal, or a common size when the user has asked for this output without a terminal
+  static ({int columns, int lines}) _stdoutSize() {
+    return stdout.hasTerminal ? (columns: stdout.terminalColumns, lines: stdout.terminalLines) : (columns: 120, lines: 40);
+  }
 
   @override
   void onEvent(PipeEvent event) {
@@ -58,7 +64,7 @@ class InteractiveReporter implements PipeReporter {
         _steps = started.allSteps;
         // The labels of the steps in a group start further right, and their times are still aligned with the rest
         _labelWidth = _steps.fold(0, (int width, StepState s) => max(width, s.depth * _levelWidth + Mansil.visibleWidth(s.step.label)));
-        _pendingLines.addAll([_bold(started.title), ""]);
+        _pendingLines.addAll([...PipeFormat.title(started.info).map(_bold), ""]);
 
         _out.write(Mansil.hideCursor);
         // The cursor would stay hidden after the user stops the run with ctrl+c

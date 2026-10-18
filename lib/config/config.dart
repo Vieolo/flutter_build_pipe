@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:build_pipe/config/platform_specific_config.dart';
+import 'package:build_pipe/runner/output_mode.dart';
 import 'package:build_pipe/utils/validation.utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart' as yaml;
@@ -15,7 +16,9 @@ class BPConfig {
   PlatformConfig? linux;
   String? xcodeDerivedKey;
   bool cleanFlutter;
-  bool printstdout;
+
+  /// How the run is shown, from the `output` field of the workflow or the `--bp-output` flag
+  OutputMode output;
   DateTime timestamp;
   String version;
   String buildVersion;
@@ -36,7 +39,7 @@ class BPConfig {
     this.preBuildCommand,
     this.postBuildCommand,
     required this.cleanFlutter,
-    required this.printstdout,
+    this.output = OutputMode.auto,
     required this.timestamp,
     required this.version,
     required this.generateLog,
@@ -61,6 +64,11 @@ class BPConfig {
     (PlatformConfig?, List<BPConfigValidationError>) windows = PlatformConfig.fromMap(platforms, TargetPlatform.windows, "windows");
     (PlatformConfig?, List<BPConfigValidationError>) web = PlatformConfig.fromMap(platforms, TargetPlatform.web, "web");
 
+    (OutputMode?, List<BPConfigValidationError>) output = _outputFromMap(data);
+    if (output.$1 == null) {
+      return (null, output.$2);
+    }
+
     return (
       BPConfig(
         android: android.$1,
@@ -72,7 +80,7 @@ class BPConfig {
         xcodeDerivedKey: data["xcode_derived_data_path_env_key"],
         cleanFlutter: data["clean_flutter"] ?? true,
         generateLog: data["generate_log"] ?? true,
-        printstdout: data["print_stdout"] ?? false,
+        output: output.$1!,
         preBuildCommand: data["pre_build_command"],
         postBuildCommand: data["post_build_command"],
         timestamp: DateTime.now(),
@@ -81,8 +89,43 @@ class BPConfig {
         cmdArgs: args,
         workflowName: workflowName,
       ),
-      [...android.$2, ...iOS.$2, ...macos.$2, ...linux.$2, ...windows.$2, ...web.$2],
+      [...output.$2, ...android.$2, ...iOS.$2, ...macos.$2, ...linux.$2, ...windows.$2, ...web.$2],
     );
+  }
+
+  /// Reads the `output` field of a workflow
+  ///
+  /// Before `output`, the workflows had `print_stdout`, which is still read when `output` is missing.
+  /// `print_stdout: true` printed the whole output of the commands, which is now `output: verbose`
+  static (OutputMode?, List<BPConfigValidationError>) _outputFromMap(yaml.YamlMap data) {
+    List<BPConfigValidationError> warnings = [];
+    if (data.containsKey("print_stdout")) {
+      warnings.add(
+        BPConfigValidationError(
+          errorCase: BPConfigValidationErrorCase.printStdoutReplaced,
+          message: "'print_stdout' is replaced by 'output' and will be removed in a future version. Use 'output: verbose' instead of 'print_stdout: true', or remove 'print_stdout: false'",
+          isWarning: true,
+        ),
+      );
+    }
+
+    if (data["output"] == null) {
+      return (data["print_stdout"] == true ? OutputMode.verbose : OutputMode.auto, warnings);
+    }
+
+    (OutputMode?, String?) parsed = OutputMode.parse(data["output"].toString());
+    if (parsed.$2 != null) {
+      return (
+        null,
+        [
+          BPConfigValidationError(
+            errorCase: BPConfigValidationErrorCase.invalidOutput,
+            message: "Invalid 'output' in the workflow -> ${parsed.$2}",
+          ),
+        ],
+      );
+    }
+    return (parsed.$1, warnings);
   }
 
   /// Gets the path of the log file, if log generation is not prevented via the config
@@ -189,10 +232,27 @@ class BPConfig {
       );
     }
 
+    // The flag overrides the `output` of the workflow
+    (OutputMode?, String?) outputFlag = OutputMode.fromArgs(args);
+    if (outputFlag.$2 != null) {
+      return (
+        null,
+        [
+          BPConfigValidationError(
+            errorCase: BPConfigValidationErrorCase.invalidOutput,
+            message: outputFlag.$2!,
+          ),
+        ],
+      );
+    }
+
     String workflowName = "default";
     List<String> overriddenTargetPlatforms = [];
     List<String> downstreamargs = [];
     for (var arg in args) {
+      if (OutputMode.isFlag(arg)) {
+        continue;
+      }
       if (arg.startsWith("--workflow=")) {
         workflowName = arg.split("=")[1];
         continue;
@@ -225,6 +285,10 @@ class BPConfig {
       pubspec["version"].split("+").length > 1 ? pubspec["version"].split("+")[1] : "0",
       workflowName: workflowName,
     );
+
+    if (config.$1 != null && outputFlag.$1 != null) {
+      config.$1!.output = outputFlag.$1!;
+    }
 
     if (config.$1 != null && overriddenTargetPlatforms.isNotEmpty) {
       config.$1?._applyTargetPlatformFilter(overriddenTargetPlatforms);

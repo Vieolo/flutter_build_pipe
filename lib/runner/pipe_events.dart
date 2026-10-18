@@ -54,6 +54,10 @@ class StepState {
   /// The number of groups the step is in
   int get depth => parent == null ? 0 : parent!.depth + 1;
 
+  /// The title of the stage, the labels of the groups the step is in, and the label of the step,
+  /// e.g. `[Build, Web, Cache bust]`
+  List<String> get path => parent == null ? [stage.title, step.label] : [...parent!.path, step.label];
+
   /// The warnings of the step and of all the steps of its group
   int get warningCount => warnings.length + children.fold(0, (int count, StepState s) => count + s.warningCount);
 
@@ -119,15 +123,27 @@ sealed class PipeEvent {
   const PipeEvent();
 }
 
+/// What is being run, shown at the top of the output
+class PipeRunInfo {
+  /// The build_pipe command, e.g. `build`
+  final String command;
+  final String workflow;
+
+  /// The version of the app, e.g. `1.2.0+12`
+  final String version;
+
+  const PipeRunInfo({required this.command, required this.workflow, required this.version});
+}
+
 /// Sent once, before the first step, with all the steps planned to run
 class RunStarted extends PipeEvent {
-  final String title;
+  final PipeRunInfo info;
 
   /// The steps of the stages, in order. The steps of a group are its [StepState.children]
   final List<StepState> steps;
   final DateTime startedAt;
 
-  const RunStarted({required this.title, required this.steps, required this.startedAt});
+  const RunStarted({required this.info, required this.steps, required this.startedAt});
 
   /// All the steps of the run, including the steps of the groups, in the order they are shown
   List<StepState> get allSteps => [for (StepState step in steps) ...step.tree];

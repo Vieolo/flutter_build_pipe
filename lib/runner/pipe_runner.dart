@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/runner/interactive_reporter.dart';
+import 'package:build_pipe/runner/json_reporter.dart';
 import 'package:build_pipe/runner/log_file_reporter.dart';
+import 'package:build_pipe/runner/output_mode.dart';
 import 'package:build_pipe/runner/pipe_events.dart';
 import 'package:build_pipe/runner/pipe_step.dart';
 import 'package:build_pipe/runner/plain_reporter.dart';
@@ -42,21 +44,16 @@ class PipeRunner {
       }
     }
 
-    // The live view redraws the lines it has printed, which only works in a terminal. It is also
-    // not used when the output of the commands is printed, since the output would push the lines away
-    bool interactive = stdout.hasTerminal && stdout.supportsAnsiEscapes && !config.printstdout;
-    reporters.add(
-      interactive
-          ? InteractiveReporter(logFilePath: logFilePath)
-          : PlainReporter(
-              printOutput: config.printstdout,
-              useColor: stdout.supportsAnsiEscapes,
-              logFilePath: logFilePath,
-            ),
-    );
+    reporters.add(switch (config.output.resolve()) {
+      OutputMode.interactive => InteractiveReporter(logFilePath: logFilePath),
+      OutputMode.json => JsonReporter(logFilePath: logFilePath),
+      OutputMode.verbose => PlainReporter(printOutput: true, useColor: stdout.supportsAnsiEscapes, logFilePath: logFilePath),
+      // `auto` is already resolved to one of the other modes
+      OutputMode.plain || OutputMode.auto => PlainReporter(printOutput: false, useColor: stdout.supportsAnsiEscapes, logFilePath: logFilePath),
+    });
 
-    String title = "command: $command\nworkflow: ${config.workflowName}\nversion: ${config.version}+${config.buildVersion}";
-    PipeRunResult result = await PipeRunner(reporters).run(title, stages);
+    PipeRunInfo info = PipeRunInfo(command: command, workflow: config.workflowName, version: "${config.version}+${config.buildVersion}");
+    PipeRunResult result = await PipeRunner(reporters).run(info, stages);
 
     if (logReporter?.writeError != null) {
       Console.logWarning("Parts of this run could not be written to the log file -> ${logReporter!.writeError}");
@@ -67,7 +64,7 @@ class PipeRunner {
   /// Runs the [stages] in order and returns the outcome
   ///
   /// When a step fails, the [FailurePolicy] of its stage decides whether the rest of the run is skipped
-  Future<PipeRunResult> run(String title, List<PipeStage> stages) async {
+  Future<PipeRunResult> run(PipeRunInfo info, List<PipeStage> stages) async {
     List<StepState> states = [];
     for (PipeStage stage in stages) {
       for (int i = 0; i < stage.steps.length; i++) {
@@ -76,7 +73,7 @@ class PipeRunner {
     }
 
     Stopwatch stopwatch = Stopwatch()..start();
-    _emit(RunStarted(title: title, steps: states, startedAt: DateTime.now()));
+    _emit(RunStarted(info: info, steps: states, startedAt: DateTime.now()));
 
     bool stopped = false;
     for (StepState state in states) {

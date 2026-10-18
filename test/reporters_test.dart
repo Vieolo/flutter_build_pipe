@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:build_pipe/runner/interactive_reporter.dart';
+import 'package:build_pipe/runner/json_reporter.dart';
 import 'package:build_pipe/runner/log_file_reporter.dart';
 import 'package:build_pipe/runner/pipe_events.dart';
 import 'package:build_pipe/runner/pipe_runner.dart';
@@ -56,7 +58,7 @@ class VirtualTerminal implements StringSink {
 
 /// A short run with a success, a group, a failure with output, and a warning
 Future<void> runSample(List<PipeReporter> reporters) async {
-  await PipeRunner(reporters).run("build_pipe build", [
+  await PipeRunner(reporters).run(const PipeRunInfo(command: "build", workflow: "default", version: "1.0.0+1"), [
     PipeStage(
       "Build",
       onFailure: FailurePolicy.continueRun,
@@ -97,7 +99,7 @@ void main() {
     ]);
 
     List<String> screen = terminal.screen;
-    expect(screen.first, "build_pipe build");
+    expect(screen.take(4), ["command: build", "workflow: default", "version: 1.0.0+1", ""]);
     expect(screen, contains("Build"));
     expect(screen.any((String row) => row.startsWith("├── √ iOS")), isTrue);
     expect(screen.any((String row) => row.startsWith("├── √ Web")), isTrue);
@@ -140,6 +142,48 @@ void main() {
     expect(text, isNot(contains("The last")));
   });
 
+  test('JsonReporter writes one JSON object per event, with the outcome of the run last', () async {
+    StringBuffer out = StringBuffer();
+    await runSample([JsonReporter(out: out, logFilePath: "the.log")]);
+    List<Map<String, dynamic>> events = [for (String line in const LineSplitter().convert(out.toString())) jsonDecode(line) as Map<String, dynamic>];
+
+    Map<String, dynamic> first = events.first;
+    expect(first["event"], "run_started");
+    expect(first["schema"], JsonReporter.schema);
+    expect([first["command"], first["workflow"], first["version"]], ["build", "default", "1.0.0+1"]);
+    expect((first["steps"] as List).map((dynamic s) => s["number"]), ["1", "2", "2.1", "2.2", "3", "4"]);
+    expect((first["steps"] as List)[3]["path"], ["Build", "Web", "Cache bust"]);
+
+    expect(events.map((Map<String, dynamic> e) => e["event"]).toSet(), {
+      "run_started",
+      "step_started",
+      "step_warning",
+      "command_started",
+      "command_finished",
+      "step_finished",
+      "run_finished",
+    }, reason: "the output of the commands and the lines meant for the log file are left out");
+    expect(out.toString(), isNot(contains("abc123")));
+
+    Map<String, dynamic> command = events.firstWhere((Map<String, dynamic> e) => e["event"] == "command_started");
+    expect(command["command"], endsWith('"token REDACTED"'));
+
+    Map<String, dynamic> android = events.firstWhere((Map<String, dynamic> e) => e["event"] == "step_finished" && e["number"] == "3");
+    expect(android["path"], ["Build", "Android"]);
+    expect(android["status"], "failed");
+    expect(android["error"], "exited with code 2");
+    expect(android["elapsed_ms"], isA<int>());
+    expect(android["recent_output"], ["gradle failed", "token REDACTED"]);
+
+    Map<String, dynamic> last = events.last;
+    expect(last["event"], "run_finished");
+    expect(last["status"], "failed");
+    expect([last["steps"], last["failed"], last["skipped"], last["warnings"]], [4, 1, 0, 1]);
+    expect(last["log_file"], "the.log");
+    expect((last["results"] as List).map((dynamic r) => r["status"]), ["succeeded", "succeeded", "succeeded", "succeeded", "failed", "succeeded"]);
+    expect((last["results"] as List).last["warnings"], ["nothing to do"]);
+  });
+
   test('LogFileReporter writes a section per step and a summary', () async {
     Directory dir = await Directory.systemTemp.createTemp("build_pipe_log_test");
     addTearDown(() => dir.delete(recursive: true));
@@ -150,7 +194,7 @@ void main() {
     await runSample([opened.$1!]);
     String log = await File(path).readAsString();
 
-    expect(log, startsWith("build_pipe build\nstarted: "));
+    expect(log, startsWith("command: build\nworkflow: default\nversion: 1.0.0+1\nstarted: "));
     expect(log, contains("[3] Build › Android\n"));
     expect(log, contains("[2.2] Build › Web › Cache bust\n"));
     expect(log, isNot(contains("[2] Build › Web\n")), reason: "a group has no section of its own");

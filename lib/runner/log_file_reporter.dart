@@ -34,7 +34,7 @@ class LogFileReporter implements PipeReporter {
   void onEvent(PipeEvent event) {
     switch (event) {
       case RunStarted started:
-        _write(started.title);
+        PipeFormat.title(started.info).forEach(_write);
         _write("started: ${started.startedAt.toIso8601String()}");
         _write("");
       case StepStarted started:
@@ -97,13 +97,7 @@ class LogFileReporter implements PipeReporter {
   }
 
   /// e.g. `[2] Pre-build › flutter clean`, or `[3.2] Build › Web › Cache bust` for a step of a group
-  String _stepName(StepState step) {
-    List<String> path = [step.step.label];
-    for (StepState? parent = step.parent; parent != null; parent = parent.parent) {
-      path.insert(0, parent.step.label);
-    }
-    return "[${step.number}] ${step.stage.title} › ${path.join(" › ")}";
-  }
+  String _stepName(StepState step) => "[${step.number}] ${step.path.join(" › ")}";
 
   /// e.g. ` - 2.1s - exited with code 1`
   String _stepEnd(StepState step) {

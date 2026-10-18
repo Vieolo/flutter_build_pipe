@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:build_pipe/runner/pipe_events.dart';
 import 'package:build_pipe/runner/pipe_format.dart';
 import 'package:build_pipe/runner/pipe_step.dart';
+import 'package:build_pipe/utils/console.utils.dart';
 import 'package:mansil/mansil.dart';
 
 /// Shows the run line by line, without moving the cursor
@@ -19,13 +18,15 @@ class PlainReporter implements PipeReporter {
   final Set<PipeStage> _printedStages = {};
 
   /// The [out] defaults to the stdout, and is replaced in the tests
-  PlainReporter({required this.printOutput, required this.useColor, this.logFilePath, StringSink? out}) : _out = out ?? stdout;
+  PlainReporter({required this.printOutput, required this.useColor, this.logFilePath, StringSink? out}) : _out = out ?? SafeStdout.instance;
 
   @override
   void onEvent(PipeEvent event) {
     switch (event) {
       case RunStarted started:
-        _out.writeln(_color(started.title, Mansil.bold));
+        for (String line in PipeFormat.title(started.info)) {
+          _out.writeln(_color(line, Mansil.bold));
+        }
         _out.writeln();
       case StepStarted started:
         _printStageTitle(started.step);

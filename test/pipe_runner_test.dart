@@ -6,6 +6,8 @@ import 'package:build_pipe/runner/pipe_step.dart';
 import 'package:build_pipe/utils/process.utils.dart';
 import 'package:test/test.dart';
 
+const PipeRunInfo testInfo = PipeRunInfo(command: "build", workflow: "default", version: "1.0.0+1");
+
 /// Keeps every event, to check what the runner has reported
 class RecordingReporter implements PipeReporter {
   final List<PipeEvent> events = [];
@@ -48,7 +50,7 @@ void main() {
   group('PipeRunner', () {
     test('runs all the steps in order and reports the run', () async {
       RecordingReporter reporter = RecordingReporter();
-      PipeRunResult result = await PipeRunner([reporter]).run("title", [
+      PipeRunResult result = await PipeRunner([reporter]).run(testInfo, [
         PipeStage(
           "First",
           steps: [
@@ -71,7 +73,7 @@ void main() {
     });
 
     test('skips the rest of the run when a step of a stopRun stage fails', () async {
-      PipeRunResult result = await PipeRunner([RecordingReporter()]).run("title", [
+      PipeRunResult result = await PipeRunner([RecordingReporter()]).run(testInfo, [
         PipeStage("Pre-build", steps: [echoStep("clean", 1), succeedingAction("pub get")]),
         PipeStage("Build", steps: [succeedingAction("iOS")], onFailure: FailurePolicy.continueRun),
       ]);
@@ -82,7 +84,7 @@ void main() {
     });
 
     test('runs the rest of the run when a step of a continueRun stage fails', () async {
-      PipeRunResult result = await PipeRunner([RecordingReporter()]).run("title", [
+      PipeRunResult result = await PipeRunner([RecordingReporter()]).run(testInfo, [
         PipeStage("Build", steps: [failingAction("iOS"), succeedingAction("Android")], onFailure: FailurePolicy.continueRun),
         PipeStage("Post-build", steps: [succeedingAction("post")]),
       ]);
@@ -93,7 +95,7 @@ void main() {
 
     test('runs the steps of a group in order and numbers them under the group', () async {
       RecordingReporter reporter = RecordingReporter();
-      PipeRunResult result = await PipeRunner([reporter]).run("title", [
+      PipeRunResult result = await PipeRunner([reporter]).run(testInfo, [
         PipeStage(
           "Build",
           steps: [
@@ -120,7 +122,7 @@ void main() {
     });
 
     test('skips the rest of a group when one of its steps fails, and fails the group', () async {
-      PipeRunResult result = await PipeRunner([RecordingReporter()]).run("title", [
+      PipeRunResult result = await PipeRunner([RecordingReporter()]).run(testInfo, [
         PipeStage(
           "Build",
           onFailure: FailurePolicy.continueRun,
@@ -143,7 +145,7 @@ void main() {
 
     test('skips a whole group when an earlier stage has stopped the run', () async {
       RecordingReporter reporter = RecordingReporter();
-      PipeRunResult result = await PipeRunner([reporter]).run("title", [
+      PipeRunResult result = await PipeRunner([reporter]).run(testInfo, [
         PipeStage("Pre-build", steps: [failingAction("clean")]),
         PipeStage(
           "Build",
@@ -159,7 +161,7 @@ void main() {
     });
 
     test('counts the warnings of the steps of a group towards the group', () async {
-      PipeRunResult result = await PipeRunner([RecordingReporter()]).run("title", [
+      PipeRunResult result = await PipeRunner([RecordingReporter()]).run(testInfo, [
         PipeStage(
           "Build",
           steps: [
@@ -182,7 +184,7 @@ void main() {
 
     test('turns an exception thrown by a step into a failure', () async {
       RecordingReporter reporter = RecordingReporter();
-      PipeRunResult result = await PipeRunner([reporter]).run("title", [
+      PipeRunResult result = await PipeRunner([reporter]).run(testInfo, [
         PipeStage("Stage", steps: [ActionStep("throws", (StepContext context) async => throw StateError("boom"))]),
       ]);
 
@@ -192,7 +194,7 @@ void main() {
     });
 
     test('fails a command step that cannot be started', () async {
-      PipeRunResult result = await PipeRunner([RecordingReporter()]).run("title", [
+      PipeRunResult result = await PipeRunner([RecordingReporter()]).run(testInfo, [
         PipeStage(
           "Stage",
           steps: [CommandStep("missing", executable: "build_pipe_missing_executable", arguments: [])],
@@ -206,7 +208,7 @@ void main() {
     test('redacts the command, its output, and the result given to the step', () async {
       RecordingReporter reporter = RecordingReporter();
       List<String> resultOutput = [];
-      PipeRunResult result = await PipeRunner([reporter]).run("title", [
+      PipeRunResult result = await PipeRunner([reporter]).run(testInfo, [
         PipeStage(
           "Stage",
           steps: [
@@ -233,7 +235,7 @@ void main() {
 
     test('keeps the warnings of a step that still succeeds', () async {
       RecordingReporter reporter = RecordingReporter();
-      PipeRunResult result = await PipeRunner([reporter]).run("title", [
+      PipeRunResult result = await PipeRunner([reporter]).run(testInfo, [
         PipeStage(
           "Stage",
           steps: [
