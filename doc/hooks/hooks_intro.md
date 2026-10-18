@@ -61,7 +61,17 @@ The hooks of a platform are set in its `build` or `publish`:
               finally: ...
 ```
 
-Every hook is optional. A hook is a single command, run as you provide it, like `build_command`. A mistake in the hooks, such as an unknown key or an empty command, stops the command before anything runs, since running the wrong hook, or none, can have unintended consequences.
+Every hook is optional. A mistake in the hooks, such as an unknown key or an empty command, stops the command before anything runs, since running the wrong hook, or none, can have unintended consequences.
+
+Only iOS and Android can be published at the moment, so only they have the hooks of `publish`.
+
+A hook is a single command, run as you provide it, like `build_command`, from the folder you run build_pipe in. The command is not run in a shell (except on Windows), so wrap the commands that need one, such as `&&`, pipes, or `$VARIABLES`, in `sh -c`, or put them in a script:
+
+```yaml
+pre_command: sh -c "cd ios && pod install"
+```
+
+Unlike `build_command`, the hooks do not get the extra args passed to `build_pipe:build`.
 
 ## When a step fails
 

@@ -53,7 +53,7 @@ void handleCommandHelpFlag(List<String> args, HelpCommand command) {
       print(
         "  Runs the build commands of all target platforms of a workflow. "
         "The workflow can be selected via the `--workflow` arg, else the `default` workflow is used. "
-        "The options, flags, and args defined blow will be processed by the command directly. "
+        "The options, flags, and args defined below will be processed by the command directly. "
         "Any unknown and extra arg provided, will be piped downstream to the platform-specific build command of Flutter.",
       );
     } else {

@@ -19,8 +19,8 @@ and the Flutter guide for
 
 The pipeline for building & publishing your Flutter app for different target platforms.
 
-## Why this project exist
-`flutter_build_pipe` aims to be a pure-dart tool for building and releasing Flutter applications with minial setup and first-party support for Flutter's components and occasional short-commings.
+## Why this project exists
+`flutter_build_pipe` aims to be a pure-dart tool for building and releasing Flutter applications with minimal setup and first-party support for Flutter's components and occasional shortcomings.
 
 ## Features
 
@@ -28,6 +28,9 @@ The pipeline for building & publishing your Flutter app for different target pla
 - Specify platforms, build commands, and your preferences in `pubspec.yaml`
 - Logs the output of all build & publish commands for future reviews
 - Define multiple workflows for different build, environment, etc.
+- Hook your own commands before and after the whole run and each platform, with `on_success` and `finally` hooks
+- Shows the run as a live tree in the terminal, line by line in CI, or as JSON for scripts and agents
+- Exits with the code `1` when any step fails, so a CI stops at a failed build
 
 #### iOS & macOS
 - Publishing the iOS app to App Store
@@ -37,11 +40,11 @@ The pipeline for building & publishing your Flutter app for different target pla
 - Publishing the Android app to the Play Store
 
 #### Web
-- Adds the version query paramter to build files post-build to solve the caching problem of Flutter web (e.g. `flutter_bootstrap.js?v=0.12.1`)
+- Adds the version query parameter to build files post-build to solve the caching problem of Flutter web (e.g. `flutter_bootstrap.js?v=0.12.1`)
 
 
 ## Usage
-Once the configuration is added to your project, `flutter_build_pipe` offer you two commands:
+Once the configuration is added to your project, `flutter_build_pipe` offers you two commands:
 
 ```bash
 ##### BUILD #####
@@ -71,6 +74,9 @@ Both commands support these flags:
 # If omitted, the output field of the config is used. If both the flag and the config
 # fields are absent, the default value of `auto` is used
 --bp-output=plain
+
+# To see the options of a command
+--help
 
 # Example
 dart run build_pipe:build --workflow=your_workflow_name --override-target-platforms=android --bp-output=json

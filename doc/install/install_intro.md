@@ -27,7 +27,7 @@ build_pipe:
   # required
   workflows:
     default:
-      # Whether to clean flutter via `flutter clean` before the builds.
+      # Whether to clean flutter via `flutter clean`, followed by `flutter pub get`, before the builds.
       # optional -- default: true
       clean_flutter: true
       # Whether to generate log files
@@ -63,7 +63,9 @@ build_pipe:
       # optional -- default: null
       xcode_derived_data_path_env_key: YOUR_ENV_VAR_KEY_TO_XCODE
       # The target platforms you wish to build for
-      # required -- At least on platform should be added
+      # required -- At least one platform should be added
+      # The platforms always run in this order, regardless of their order here:
+      # android, ios, macos, windows, linux, web
       platforms:
         # Read below to know about the common and platform-specific properties of each platform object
         ios:
@@ -94,6 +96,8 @@ build_pipe:
 
 ---
 ---
+Read about the hooks and the order of the steps in the [run order & hooks doc](../hooks/hooks_intro.md), and about the ways a run can be shown in the [output doc](../output/output_intro.md).
+
 You need at least one target platform using their name, as made above. Target platforms has some generic fields which are used by all platforms, such as `build_command` and some platform-specific fields. Here, I explain the common fields first, and then add the platform-specific fields.
 
 ```yaml
@@ -213,7 +217,7 @@ android:
       # The default path is -> `./private_keys/play_api_key.json` (in the project root)
       #
       # Optional
-      credentialPath: PLAY_API_KEY_PATH # optional env variabl key
+      credentialPath: PLAY_API_KEY_PATH # optional env variable key
 
 # These properties are only applicable to macos
 macos:

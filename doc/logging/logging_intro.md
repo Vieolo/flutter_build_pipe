@@ -10,7 +10,7 @@ Add `.flutter_build_pipe/` to your `.gitignore` for git to ignore this folder.
 
 The log file has one section per step, in the order they run. Each line of a section starts with the time since the step has started, and the section ends with the outcome of the step. A summary of the whole run is at the end of the file.
 
-The steps are numbered in order. The extra steps of a platform, such as the cache bust of web, are numbered under the platform, e.g. `[3.2] Build › Web › Cache bust (hash)`.
+The steps are numbered in order. The steps of a platform with hooks or extra steps, such as the cache bust of web, are numbered under the platform, e.g. `[3.2] Build › Web › Cache bust (hash)`. The section of a hook also has the env variables given to it.
 
 ```
 command: build

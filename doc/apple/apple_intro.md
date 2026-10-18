@@ -18,13 +18,16 @@ To delete the derived data before the builds, create an environmental variable (
 export XCODE_DERIVED_PATH=/path/to/derived/data
 ```
 
-Once set, write the name of the env variable in your `build_pipe` config. for example:
+Once set, write the name of the env variable in your workflow. for example:
 
 ```yaml
-xcode_derived_data_path_env_key: XCODE_DERIVED_PATH
+build_pipe:
+  workflows:
+    default:
+      xcode_derived_data_path_env_key: XCODE_DERIVED_PATH
 ```
 
-Once passed, the derived data will be erased before a build run.
+Once passed, the derived data will be erased once, before the platforms are built, when the workflow builds iOS or macOS. When the env variable is missing, a warning is shown and the build goes on. When the path does not exist, or cannot be deleted, nothing is built.
 
 
 ## Publish
@@ -33,16 +36,13 @@ Once passed, the derived data will be erased before a build run.
 To publish your app to iOS, follow these steps. I assume that you already have an Apple developer account and created the initial setup for your app on App Store Connect.
 
 1. Make sure you have XCode and xcrun installed.
-2. Create an API key on `App Store Connect` > `Users & Access` > `Integrations` > `Team Keys`. Only proved the `App Manager` access to the key. This should give you a `.p8` file. Do not expose this file and do not add it to version control.
+2. Create an API key on `App Store Connect` > `Users & Access` > `Integrations` > `Team Keys`. Only provide the `App Manager` access to the key. This should give you a `.p8` file. Do not expose this file and do not add it to version control.
 3. Copy the `.p8` file to one of the following places:
     - `/private_keys` -> Root of your project, do not add to git
     - `~/private_keys`
     - `~/.private_keys`
     - `~/.appstoreconnect/private_keys`
-4. Add these values to the environmental variables. Since these information are sensitive, `build_pipe` will read the values from your env. You can choose the key as you wish. Here I use an example key and will tell you what value to add:
-        keyID: RECHIVE_PUB_KEY_ID
-        issuerID: RECHIVE_PUB_ISSUER_ID
-        appAppleID: RECHIVE_PUB_APPLE_ID
+4. Add these values to the environmental variables. Since these information are sensitive, `build_pipe` will read the values from your env, and hide them from the terminal and the log file. You can choose the key as you wish. Here I use an example key and will tell you what value to add:
     - `IOS_APP_KEY_ID` --> The key id of the API key you created. You can find the key ID in the same page you created the API key.
     - `IOS_APP_ISSUER_ID` --> The issuer ID of your account. You can find it on `App Store Connect` > `Users & Access` > `Integrations` > `Team Keys`.
     - `IOS_APP_APPLE_ID` --> The apple ID of your app. You can find the Apple ID your app on `App Store Connect` > `Apps` > `Your App` > `App Information` > `General Information`.
@@ -50,15 +50,18 @@ To publish your app to iOS, follow these steps. I assume that you already have a
 
 ```yaml
 build_pipe:
-  platforms:
-    ios:
-      build_command: flutter build ipa
-      publish:
-        keyID: IOS_APP_KEY_ID # The env variable you created
-        issuerID: IOS_APP_ISSUER_ID # The env variable you created
-        appAppleID: IOS_APP_APPLE_ID # The env variable you created
-        bundleID: com.example.yourapp # The bundle id your app
-        outputFilePath: build/ios/ipa/yourapp.ipa # The path to the local output file
+  workflows:
+    default:
+      platforms:
+        ios:
+          build:
+            build_command: flutter build ipa
+          publish:
+            keyID: IOS_APP_KEY_ID # The env variable you created
+            issuerID: IOS_APP_ISSUER_ID # The env variable you created
+            appAppleID: IOS_APP_APPLE_ID # The env variable you created
+            bundleID: com.example.yourapp # The bundle id your app
+            outputFilePath: build/ios/ipa/yourapp.ipa # The path to the local output file
 ```
     
 Once you have the API key, added the env variables, and added the publish config, you can just run the publish command. The version of your `pubspec` will be used to send the file to the App Store Connect.

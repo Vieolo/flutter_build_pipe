@@ -43,7 +43,7 @@ build_pipe:
             outputFilePath: build/app/outputs/bundle/release/app-release.aab
             bundleID: com.example.yourapp
             releaseTrack: internal
-            credentialPath: PLAY_API_KEY_PATH # optional env variabl key
+            credentialPath: PLAY_API_KEY_PATH # optional env variable key
         macos:
           build:
             build_command: flutter build macos
