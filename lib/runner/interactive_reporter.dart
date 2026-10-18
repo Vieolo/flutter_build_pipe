@@ -11,7 +11,8 @@ import 'package:mansil/mansil.dart';
 ///
 /// The finished steps are printed for good. The running step and the steps after it form the live
 /// part at the bottom, which is erased and redrawn on every frame. Since the steps run in order, the
-/// finished steps are always above the live part
+/// finished steps are always above the live part. A group is printed for good with its steps, once
+/// the last of them has finished
 class InteractiveReporter implements PipeReporter {
   static const List<String> _spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
   static const Duration _frameInterval = Duration(milliseconds: 80);
@@ -19,10 +20,14 @@ class InteractiveReporter implements PipeReporter {
   /// The number of output lines shown under the running step
   static const int _liveOutputLines = 3;
 
+  /// The width of one level of the tree, e.g. `├── `
+  static const int _levelWidth = 4;
+
   final String? logFilePath;
   final StringSink _out;
   final ({int columns, int lines}) Function() _terminalSize;
 
+  /// All the steps, including the steps of the groups, in the order they are shown
   List<StepState> _steps = [];
 
   /// The index of the first step that is not printed for good yet
@@ -50,8 +55,9 @@ class InteractiveReporter implements PipeReporter {
   void onEvent(PipeEvent event) {
     switch (event) {
       case RunStarted started:
-        _steps = started.steps;
-        _labelWidth = _steps.fold(0, (int width, StepState s) => max(width, Mansil.visibleWidth(s.step.label)));
+        _steps = started.allSteps;
+        // The labels of the steps in a group start further right, and their times are still aligned with the rest
+        _labelWidth = _steps.fold(0, (int width, StepState s) => max(width, s.depth * _levelWidth + Mansil.visibleWidth(s.step.label)));
         _pendingLines.addAll([_bold(started.title), ""]);
 
         _out.write(Mansil.hideCursor);
@@ -68,10 +74,14 @@ class InteractiveReporter implements PipeReporter {
       case StepStarted started:
         _printStageTitle(started.step);
         _render();
-      case StepFinished finished:
-        _printStageTitle(finished.step);
-        _pendingLines.addAll(_finishedLines(finished.step));
-        _firstLiveStep = finished.step.number;
+      case StepFinished _:
+        // A step of a group stays in the live part until the whole group has finished
+        while (_firstLiveStep < _steps.length && _steps[_firstLiveStep].isFinished) {
+          StepState step = _steps[_firstLiveStep];
+          _printStageTitle(step);
+          _pendingLines.addAll(_finishedLines(step));
+          _firstLiveStep++;
+        }
         _render();
       case RunFinished finished:
         _timer?.cancel();
@@ -118,7 +128,7 @@ class InteractiveReporter implements PipeReporter {
     _out.write(buffer.toString());
   }
 
-  /// The lines of the running step and the steps after it, cut to fit in the terminal
+  /// The lines of the steps that are not printed for good yet, cut to fit in the terminal
   List<String> _liveLines(int terminalLines) {
     List<String> lines = [];
     Set<PipeStage> titledStages = {..._printedStages};
@@ -129,10 +139,11 @@ class InteractiveReporter implements PipeReporter {
         titledStages.add(step.stage);
       }
       lines.add(_stepLine(step));
-      if (step.status == StepStatus.running) {
+      // A running group has no output of its own, its running step does
+      if (step.status == StepStatus.running && step.children.isEmpty) {
         List<String> output = step.recentOutput;
         for (String line in output.skip(max(0, output.length - _liveOutputLines))) {
-          lines.add(_dim("${_branchContinuation(step)}  ${PipeFormat.terminalLine(line)}"));
+          lines.add(_dim("${_continuation(step)}  ${PipeFormat.terminalLine(line)}"));
         }
       }
     }
@@ -148,7 +159,7 @@ class InteractiveReporter implements PipeReporter {
 
   /// The lines printed for good once a step has finished
   List<String> _finishedLines(StepState step) {
-    String indent = "${_branchContinuation(step)}  ";
+    String indent = "${_continuation(step)}  ";
     List<String> lines = [_stepLine(step)];
     for (String warning in step.warnings) {
       lines.add("$indent${PipeFormat.color("! $warning", Mansil.yellowFg, true)}");
@@ -168,12 +179,13 @@ class InteractiveReporter implements PipeReporter {
     return lines;
   }
 
-  /// e.g. `├── √ flutter clean     2.1s`
+  /// e.g. `├── √ flutter clean     2.1s`, or `│   └── √ Cache bust     0.1s` for a step of a group
   String _stepLine(StepState step) {
-    String branch = step.isLastInStage ? "└──" : "├──";
+    String branch = "${_ancestorsContinuation(step)}${step.isLast ? "└──" : "├──"}";
     String symbol = step.status == StepStatus.running ? PipeFormat.color(_spinner[_frame % _spinner.length], Mansil.cyanFg, true) : PipeFormat.symbol(step, useColor: true);
 
-    String time = "";
+    // A skipped step has no time, and its note still lines up with the notes of the other steps
+    String time = "".padLeft(7);
     if (step.status == StepStatus.running || step.status == StepStatus.succeeded || step.status == StepStatus.failed) {
       time = PipeFormat.duration(step.elapsed).padLeft(7);
     }
@@ -187,7 +199,8 @@ class InteractiveReporter implements PipeReporter {
       note = _dim(PipeFormat.outcome(step));
     }
 
-    String line = "$branch $symbol ${PipeFormat.pad(step.step.label, _labelWidth)}  ${_dim(time)}";
+    String label = PipeFormat.pad(step.step.label, _labelWidth - step.depth * _levelWidth);
+    String line = "$branch $symbol $label  ${_dim(time)}";
     return note.isEmpty ? line : "$line  $note";
   }
 
@@ -197,8 +210,14 @@ class InteractiveReporter implements PipeReporter {
     }
   }
 
-  /// What continues the branch of the tree under a step, so that its extra lines stay inside the tree
-  String _branchContinuation(StepState step) => step.isLastInStage ? "    " : "│   ";
+  /// What continues the branches of the groups above a step, e.g. `│   ` for a step of a group that is not the last
+  String _ancestorsContinuation(StepState step) {
+    StepState? parent = step.parent;
+    return parent == null ? "" : _continuation(parent);
+  }
+
+  /// What continues the branch of the tree under a step, so that the lines under it stay inside the tree
+  String _continuation(StepState step) => "${_ancestorsContinuation(step)}${step.isLast ? "    " : "│   "}";
 
   String _bold(String text) => PipeFormat.color(text, Mansil.bold, true);
 

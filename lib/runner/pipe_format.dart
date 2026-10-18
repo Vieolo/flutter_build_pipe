@@ -33,7 +33,7 @@ class PipeFormat {
   static String symbol(StepState step, {required bool useColor}) {
     switch (step.status) {
       case StepStatus.succeeded:
-        return step.warnings.isEmpty ? color("√", Mansil.greenFg, useColor) : color("!", Mansil.yellowFg, useColor);
+        return step.warningCount == 0 ? color("√", Mansil.greenFg, useColor) : color("!", Mansil.yellowFg, useColor);
       case StepStatus.failed:
         return color("X", Mansil.redFg, useColor);
       case StepStatus.skipped:
@@ -53,7 +53,7 @@ class PipeFormat {
       case StepStatus.skipped:
         return "skipped, ${step.skipReason ?? "-"}";
       case StepStatus.succeeded:
-        return step.warnings.isEmpty ? "" : "${step.warnings.length} warning${step.warnings.length == 1 ? "" : "s"}";
+        return step.warningCount == 0 ? "" : "${step.warningCount} warning${step.warningCount == 1 ? "" : "s"}";
       case StepStatus.pending:
       case StepStatus.running:
         return "";

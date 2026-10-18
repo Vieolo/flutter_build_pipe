@@ -6,13 +6,13 @@ import 'package:build_pipe/runner/pipe_format.dart';
 /// Writes the run to a log file, one section per step
 ///
 /// Each line of a step starts with the time since the step has started. The lines are written as soon
-/// as they arrive, so the log is complete up to the moment a run is stopped
+/// as they arrive, so the log is complete up to the moment a run is stopped. A group has no section of its
+/// own, since all its work is done by its steps
 class LogFileReporter implements PipeReporter {
   static final String _runRule = "=" * 72;
   static final String _stepRule = "-" * 72;
 
   final RandomAccessFile _file;
-  int _stepCount = 0;
 
   /// The first error that happened while writing. Nothing is written after it
   String? writeError;
@@ -34,13 +34,14 @@ class LogFileReporter implements PipeReporter {
   void onEvent(PipeEvent event) {
     switch (event) {
       case RunStarted started:
-        _stepCount = started.steps.length;
         _write(started.title);
         _write("started: ${started.startedAt.toIso8601String()}");
         _write("");
       case StepStarted started:
-        _writeStepHeader(started.step);
-        _write(_stepRule);
+        if (started.step.children.isEmpty) {
+          _writeStepHeader(started.step);
+          _write(_stepRule);
+        }
       case StepStatusChanged changed:
         _writeTimed(changed.step, "» ${changed.text}");
       case StepWarned warned:
@@ -54,12 +55,14 @@ class LogFileReporter implements PipeReporter {
       case CommandFinished finished:
         _writeTimed(finished.step, finished.error != null ? "  could not start: ${finished.error}" : "  exit code: ${finished.exitCode}");
       case StepFinished finished:
-        _writeStepEnd(finished.step);
+        if (finished.step.children.isEmpty) {
+          _writeStepEnd(finished.step);
+        }
       case RunFinished finished:
         _write(_runRule);
         _write(PipeFormat.summary(finished.result));
-        for (StepState step in finished.result.steps) {
-          _write("  ${PipeFormat.symbol(step, useColor: false)} ${_stepName(step)}${_stepEnd(step)}");
+        for (StepState step in finished.result.allSteps) {
+          _write("${"  " * (step.depth + 1)}${PipeFormat.symbol(step, useColor: false)} ${_stepName(step)}${_stepEnd(step)}");
         }
     }
   }
@@ -93,8 +96,14 @@ class LogFileReporter implements PipeReporter {
     _write("");
   }
 
-  /// e.g. `[2/7] Pre-build › flutter clean`
-  String _stepName(StepState step) => "[${step.number}/$_stepCount] ${step.stage.title} › ${step.step.label}";
+  /// e.g. `[2] Pre-build › flutter clean`, or `[3.2] Build › Web › Cache bust` for a step of a group
+  String _stepName(StepState step) {
+    List<String> path = [step.step.label];
+    for (StepState? parent = step.parent; parent != null; parent = parent.parent) {
+      path.insert(0, parent.step.label);
+    }
+    return "[${step.number}] ${step.stage.title} › ${path.join(" › ")}";
+  }
 
   /// e.g. ` - 2.1s - exited with code 1`
   String _stepEnd(StepState step) {

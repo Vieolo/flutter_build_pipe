@@ -54,7 +54,7 @@ class VirtualTerminal implements StringSink {
   List<String> get screen => rows.last.isEmpty ? rows.sublist(0, rows.length - 1) : rows;
 }
 
-/// A short run with a success, a failure with output, and a skipped step
+/// A short run with a success, a group, a failure with output, and a warning
 Future<void> runSample(List<PipeReporter> reporters) async {
   await PipeRunner(reporters).run("build_pipe build", [
     PipeStage(
@@ -62,6 +62,13 @@ Future<void> runSample(List<PipeReporter> reporters) async {
       onFailure: FailurePolicy.continueRun,
       steps: [
         ActionStep("iOS", (StepContext context) async => null),
+        StepGroup("Web", [
+          ActionStep("Build", (StepContext context) async => null),
+          ActionStep("Cache bust", (StepContext context) async {
+            context.log("v=1.0.0");
+            return null;
+          }),
+        ]),
         CommandStep(
           "Android",
           executable: Platform.resolvedExecutable,
@@ -93,6 +100,14 @@ void main() {
     expect(screen.first, "build_pipe build");
     expect(screen, contains("Build"));
     expect(screen.any((String row) => row.startsWith("├── √ iOS")), isTrue);
+    expect(screen.any((String row) => row.startsWith("├── √ Web")), isTrue);
+    expect(screen.any((String row) => row.startsWith("│   ├── √ Build")), isTrue);
+    expect(screen.any((String row) => row.startsWith("│   └── √ Cache bust")), isTrue);
+    expect(
+      screen.indexWhere((String row) => row.contains("Cache bust")),
+      screen.indexWhere((String row) => row.contains("Web")) + 2,
+      reason: "the steps of a group are right under the group",
+    );
     expect(screen.any((String row) => row.startsWith("└── X Android") && row.endsWith("exited with code 2")), isTrue);
     expect(screen, contains("        gradle failed"));
     expect(screen, contains("        token REDACTED"));
@@ -100,7 +115,7 @@ void main() {
     expect(screen, contains("      ! nothing to do"));
     expect(screen.where((String row) => row.contains("Android")), hasLength(1), reason: "the live line of a step is replaced, not repeated");
     expect(screen.last, "Log: the.log");
-    expect(screen[screen.length - 2], startsWith("X 1 of 3 steps failed, 1 warning - "));
+    expect(screen[screen.length - 2], startsWith("X 1 of 4 steps failed, 1 warning - "));
   });
 
   test('PlainReporter prints the end of the output only for a failed step', () async {
@@ -108,7 +123,9 @@ void main() {
     await runSample([PlainReporter(printOutput: false, useColor: false, out: out)]);
     List<String> lines = out.toString().split("\n");
 
-    expect(lines, containsAllInOrder(["Build", "› iOS", "› Android", "Post-build", "› Post-build command", "    ! nothing to do"]));
+    expect(lines, containsAllInOrder(["Build", "› iOS", "› Web", "  › Build", "  › Cache bust", "› Android", "Post-build", "› Post-build command", "    ! nothing to do"]));
+    int cacheBust = lines.indexWhere((String line) => line.startsWith("  √ Cache bust - "));
+    expect(lines[cacheBust + 1], startsWith("√ Web - "), reason: "a group finishes right after its last step");
     expect(lines.any((String line) => line.startsWith("X Android - ") && line.endsWith(" - exited with code 2")), isTrue);
     expect(lines, containsAllInOrder(["      gradle failed", "      token REDACTED"]));
     expect(lines.any((String line) => line.startsWith("√ iOS - ")), isTrue);
@@ -133,14 +150,19 @@ void main() {
     await runSample([opened.$1!]);
     String log = await File(path).readAsString();
 
-    expect(log, startsWith("build_pipe build\nstarted at "));
-    expect(log, contains("[2/3] Build › Android\n"));
+    expect(log, startsWith("build_pipe build\nstarted: "));
+    expect(log, contains("[3] Build › Android\n"));
+    expect(log, contains("[2.2] Build › Web › Cache bust\n"));
+    expect(log, isNot(contains("[2] Build › Web\n")), reason: "a group has no section of its own");
+    expect(log, matches(RegExp(r'\[\d\d:\d\d\.\d\] v=1\.0\.0\n')));
     expect(log, matches(RegExp(r'\[\d\d:\d\d\.\d\]   token REDACTED\n')));
     expect(log, isNot(contains("abc123")));
     expect(log, contains("  exit code: 2\n"));
     expect(log, matches(RegExp(r'failed - \d+\.\ds - exited with code 2\n')));
     expect(log, contains("warning: nothing to do"));
-    expect(log, contains("  X [2/3] Build › Android"));
+    expect(log, contains("\n  X [3] Build › Android - "));
+    expect(log, contains("\n  √ [2] Build › Web - "));
+    expect(log, contains("\n    √ [2.2] Build › Web › Cache bust - "));
     expect(opened.$1!.writeError, isNull);
   });
 

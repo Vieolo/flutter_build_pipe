@@ -61,7 +61,7 @@ void main() {
       ]);
 
       expect(result.hasFailures, isFalse);
-      expect(result.steps.map((StepState s) => s.number), [1, 2, 3]);
+      expect(result.steps.map((StepState s) => s.number), ["1", "2", "3"]);
       expect(statuses(result), {"a": StepStatus.succeeded, "b": StepStatus.succeeded, "c": StepStatus.succeeded});
       expect(reporter.events.first, isA<RunStarted>());
       expect(reporter.events.last, isA<RunFinished>());
@@ -89,6 +89,95 @@ void main() {
 
       expect(result.failedSteps.map((StepState s) => s.step.label), ["iOS"]);
       expect(statuses(result), {"iOS": StepStatus.failed, "Android": StepStatus.succeeded, "post": StepStatus.succeeded});
+    });
+
+    test('runs the steps of a group in order and numbers them under the group', () async {
+      RecordingReporter reporter = RecordingReporter();
+      PipeRunResult result = await PipeRunner([reporter]).run("title", [
+        PipeStage(
+          "Build",
+          steps: [
+            succeedingAction("iOS"),
+            StepGroup("Web", [echoStep("Build", 0), succeedingAction("Cache bust")]),
+          ],
+        ),
+      ]);
+
+      expect(result.hasFailures, isFalse);
+      expect(result.steps.map((StepState s) => s.step.label), ["iOS", "Web"], reason: "the steps of a group are not steps of the stage");
+      expect(result.allSteps.map((StepState s) => s.number), ["1", "2", "2.1", "2.2"]);
+      expect(result.allSteps.map((StepState s) => s.depth), [0, 0, 1, 1]);
+      expect(result.allSteps.map((StepState s) => s.isLast), [false, true, false, true]);
+      expect(
+        reporter.events.whereType<StepStarted>().map((StepStarted e) => e.step.step.label),
+        ["iOS", "Web", "Build", "Cache bust"],
+      );
+      expect(
+        reporter.events.whereType<StepFinished>().map((StepFinished e) => e.step.step.label),
+        ["iOS", "Build", "Cache bust", "Web"],
+        reason: "a group finishes after its steps",
+      );
+    });
+
+    test('skips the rest of a group when one of its steps fails, and fails the group', () async {
+      PipeRunResult result = await PipeRunner([RecordingReporter()]).run("title", [
+        PipeStage(
+          "Build",
+          onFailure: FailurePolicy.continueRun,
+          steps: [
+            StepGroup("Web", [echoStep("Build", 1), succeedingAction("Cache bust")]),
+            succeedingAction("Android"),
+          ],
+        ),
+      ]);
+
+      Map<String, StepState> steps = {for (StepState s in result.allSteps) s.step.label: s};
+      expect(steps["Build"]!.status, StepStatus.failed);
+      expect(steps["Cache bust"]!.status, StepStatus.skipped);
+      expect(steps["Cache bust"]!.skipReason, "Build has failed");
+      expect(steps["Web"]!.status, StepStatus.failed);
+      expect(steps["Web"]!.error!.message, "Build has failed");
+      expect(steps["Android"]!.status, StepStatus.succeeded, reason: "the stage treats the group as one of its steps");
+      expect(result.failedSteps, hasLength(1));
+    });
+
+    test('skips a whole group when an earlier stage has stopped the run', () async {
+      RecordingReporter reporter = RecordingReporter();
+      PipeRunResult result = await PipeRunner([reporter]).run("title", [
+        PipeStage("Pre-build", steps: [failingAction("clean")]),
+        PipeStage(
+          "Build",
+          steps: [
+            StepGroup("Web", [succeedingAction("Build"), succeedingAction("Cache bust")]),
+          ],
+        ),
+      ]);
+
+      expect(result.allSteps.skip(1).map((StepState s) => s.status), everyElement(StepStatus.skipped));
+      expect(reporter.events.whereType<StepStarted>().map((StepStarted e) => e.step.step.label), ["clean"]);
+      expect(reporter.events.whereType<StepFinished>(), hasLength(4), reason: "every skipped step is reported");
+    });
+
+    test('counts the warnings of the steps of a group towards the group', () async {
+      PipeRunResult result = await PipeRunner([RecordingReporter()]).run("title", [
+        PipeStage(
+          "Build",
+          steps: [
+            StepGroup("Web", [
+              succeedingAction("Build"),
+              ActionStep("Cache bust", (StepContext context) async {
+                context.warn("index.html is missing");
+                return null;
+              }),
+            ]),
+          ],
+        ),
+      ]);
+
+      expect(result.steps.single.status, StepStatus.succeeded);
+      expect(result.steps.single.warnings, isEmpty);
+      expect(result.steps.single.warningCount, 1);
+      expect(result.warningCount, 1);
     });
 
     test('turns an exception thrown by a step into a failure', () async {

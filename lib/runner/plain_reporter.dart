@@ -29,18 +29,18 @@ class PlainReporter implements PipeReporter {
         _out.writeln();
       case StepStarted started:
         _printStageTitle(started.step);
-        _out.writeln("${PipeFormat.symbol(started.step, useColor: useColor)} ${started.step.step.label}");
+        _out.writeln("${_indent(started.step)}${PipeFormat.symbol(started.step, useColor: useColor)} ${started.step.step.label}");
       case StepStatusChanged changed:
-        _out.writeln(_color("    ${changed.text}", Mansil.dim));
+        _out.writeln(_color("${_indent(changed.step)}    ${changed.text}", Mansil.dim));
       case StepWarned warned:
-        _out.writeln(_color("    ! ${warned.message}", Mansil.yellowFg));
+        _out.writeln(_color("${_indent(warned.step)}    ! ${warned.message}", Mansil.yellowFg));
       case CommandStarted started:
         if (printOutput) {
-          _out.writeln(_color("    \$ ${started.commandLine}", Mansil.dim));
+          _out.writeln(_color("${_indent(started.step)}    \$ ${started.commandLine}", Mansil.dim));
         }
       case CommandOutput output:
         if (printOutput) {
-          _out.writeln("    ${PipeFormat.terminalLine(output.line)}");
+          _out.writeln("${_indent(output.step)}    ${PipeFormat.terminalLine(output.line)}");
         }
       case StepFinished finished:
         _printStageTitle(finished.step);
@@ -72,21 +72,25 @@ class PlainReporter implements PipeReporter {
     if (outcome.isNotEmpty) {
       parts.add(outcome);
     }
-    _out.writeln("${PipeFormat.symbol(step, useColor: useColor)} ${parts.join(" - ")}");
+    String indent = _indent(step);
+    _out.writeln("$indent${PipeFormat.symbol(step, useColor: useColor)} ${parts.join(" - ")}");
 
     if (step.status != StepStatus.failed) return;
     for (String detail in step.error?.details ?? <String>[]) {
-      _out.writeln(_color("    $detail", Mansil.redFg));
+      _out.writeln(_color("$indent    $detail", Mansil.redFg));
     }
     // When the output is printed, the end of it is already right above
     List<String> output = step.recentOutput;
     if (!printOutput && output.isNotEmpty) {
-      _out.writeln(_color("    The last ${output.length} lines of the output:", Mansil.dim));
+      _out.writeln(_color("$indent    The last ${output.length} lines of the output:", Mansil.dim));
       for (String line in output) {
-        _out.writeln("      ${PipeFormat.terminalLine(line)}");
+        _out.writeln("$indent      ${PipeFormat.terminalLine(line)}");
       }
     }
   }
+
+  /// Moves the lines of the steps of a group to the right of the group
+  String _indent(StepState step) => "  " * step.depth;
 
   void _printStageTitle(StepState step) {
     if (_printedStages.add(step.stage)) {

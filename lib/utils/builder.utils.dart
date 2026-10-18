@@ -1,7 +1,7 @@
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/config/platform_specific_config.dart';
+import 'package:build_pipe/config/web_specific_config.dart';
 import 'package:build_pipe/runner/pipe_step.dart';
-import 'package:build_pipe/utils/process.utils.dart';
 import 'package:build_pipe/utils/web.utils.dart';
 
 /// The utility class for creating the build steps
@@ -34,38 +34,51 @@ class PipeBuilder {
       // and the lack of build command is not caught by the config parser
       if (platformConfig == null || platformConfig.buildCommand.isEmpty) continue;
 
-      if (platform == TargetPlatform.web) {
-        steps.add(_webBuildStep(config, platformConfig));
-      } else {
-        steps.add(
-          CommandStep.fromString(
-            _platformNames[platform]!,
-            platformConfig.buildCommand,
-            // Appending any additional command line arguments passed down from build_pipe:build command
-            extraArguments: config.cmdArgs,
-          ),
-        );
-      }
+      String name = _platformNames[platform]!;
+      List<PipeStep> postBuildSteps = _postBuildSteps(config, platform);
+
+      // The extra steps of a platform are shown under it, so a platform with extra steps becomes a group.
+      // Being in a group, the extra steps are skipped when the build fails
+      steps.add(
+        postBuildSteps.isEmpty
+            ? _buildCommandStep(config, platformConfig, name)
+            : StepGroup(name, [
+                _buildCommandStep(config, platformConfig, "Build"),
+                ...postBuildSteps,
+              ]),
+      );
     }
     return steps;
   }
 
-  /// Builds for `web`
-  /// After the build process is completed, if not prevented
-  /// via the pubspec config, it will handle the web cache busting as well
-  static PipeStep _webBuildStep(BPConfig config, PlatformConfig platformConfig) {
-    return ActionStep(_platformNames[TargetPlatform.web]!, (StepContext context) async {
-      List<String> buildCommand = ProcessHelper.splitCommand(platformConfig.buildCommand);
-      StepError? buildError = StepError.fromCommand(
-        await context.runCommand(buildCommand.first, [...buildCommand.skip(1), ...config.cmdArgs]),
-      );
-      // There is nothing to apply the cache bust to, when the build has failed
-      if (buildError != null) return buildError;
+  /// The step running the build command of a platform
+  static PipeStep _buildCommandStep(BPConfig config, PlatformConfig platformConfig, String label) {
+    return CommandStep.fromString(
+      label,
+      platformConfig.buildCommand,
+      // Appending any additional command line arguments passed down from build_pipe:build command
+      extraArguments: config.cmdArgs,
+    );
+  }
 
-      if (platformConfig.webConfig?.addVersionQueryParam == true) {
-        return await WebUtils.applyCacheBustPostBuild(config, context);
-      }
-      return null;
-    });
+  /// The steps run after the build command of a platform, e.g. the cache busting of web
+  static List<PipeStep> _postBuildSteps(BPConfig config, TargetPlatform platform) {
+    switch (platform) {
+      case TargetPlatform.web:
+        if (config.web?.webConfig?.addVersionQueryParam != true) return [];
+        WebVersioningType versioningType = config.web?.webConfig?.webVersioningType ?? WebVersioningType.hash;
+        return [
+          ActionStep(
+            "Cache bust (${versioningType.isHash ? "hash" : "version ${config.version}"})",
+            (StepContext context) => WebUtils.applyCacheBustPostBuild(config, context),
+          ),
+        ];
+      case TargetPlatform.ios:
+      case TargetPlatform.android:
+      case TargetPlatform.macos:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return [];
+    }
   }
 }

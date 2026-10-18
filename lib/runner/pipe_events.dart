@@ -13,10 +13,17 @@ class StepState {
   final PipeStep step;
   final PipeStage stage;
 
-  /// The position of the step in the run, starting from 1
-  final int number;
-  final bool isFirstInStage;
-  final bool isLastInStage;
+  /// The group the step belongs to, if any
+  final StepState? parent;
+
+  /// The steps of a [StepGroup], empty for the other steps
+  final List<StepState> children = [];
+
+  /// The position of the step in the run, e.g. `3` for the third step and `3.2` for the second step of its group
+  final String number;
+
+  /// Whether the step is the last of its stage, or of its group
+  final bool isLast;
 
   StepStatus status = StepStatus.pending;
 
@@ -37,9 +44,18 @@ class StepState {
     required this.step,
     required this.stage,
     required this.number,
-    required this.isFirstInStage,
-    required this.isLastInStage,
+    required this.isLast,
+    this.parent,
   });
+
+  /// The step followed by all the steps of its group, and of their groups, in the order they are shown
+  List<StepState> get tree => [this, for (StepState child in children) ...child.tree];
+
+  /// The number of groups the step is in
+  int get depth => parent == null ? 0 : parent!.depth + 1;
+
+  /// The warnings of the step and of all the steps of its group
+  int get warningCount => warnings.length + children.fold(0, (int count, StepState s) => count + s.warningCount);
 
   /// The time the step has been running for, or took to run once it is finished
   Duration get elapsed => _stopwatch.elapsed;
@@ -80,17 +96,20 @@ class StepState {
 
 /// The outcome of a run
 class PipeRunResult {
-  /// All the steps of the run, in order
+  /// The steps of the stages, in order. The steps of a group are its [StepState.children]
   final List<StepState> steps;
   final Duration elapsed;
 
   const PipeRunResult({required this.steps, required this.elapsed});
 
+  /// All the steps of the run, including the steps of the groups, in the order they are shown
+  List<StepState> get allSteps => [for (StepState step in steps) ...step.tree];
+
   List<StepState> get failedSteps => steps.where((StepState s) => s.status == StepStatus.failed).toList();
 
   List<StepState> get skippedSteps => steps.where((StepState s) => s.status == StepStatus.skipped).toList();
 
-  int get warningCount => steps.fold(0, (int count, StepState s) => count + s.warnings.length);
+  int get warningCount => steps.fold(0, (int count, StepState s) => count + s.warningCount);
 
   bool get hasFailures => failedSteps.isNotEmpty;
 }
@@ -103,10 +122,15 @@ sealed class PipeEvent {
 /// Sent once, before the first step, with all the steps planned to run
 class RunStarted extends PipeEvent {
   final String title;
+
+  /// The steps of the stages, in order. The steps of a group are its [StepState.children]
   final List<StepState> steps;
   final DateTime startedAt;
 
   const RunStarted({required this.title, required this.steps, required this.startedAt});
+
+  /// All the steps of the run, including the steps of the groups, in the order they are shown
+  List<StepState> get allSteps => [for (StepState step in steps) ...step.tree];
 }
 
 class StepStarted extends PipeEvent {

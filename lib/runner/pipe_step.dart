@@ -48,6 +48,16 @@ class ActionStep extends PipeStep {
   ActionStep(super.label, this.action);
 }
 
+/// Steps that belong together, such as building a platform and then processing the build output
+///
+/// The steps of the group run in order, and the first failure skips the rest of the group. To its stage,
+/// the group is a single step, which fails when any of its steps fails
+class StepGroup extends PipeStep {
+  final List<PipeStep> steps;
+
+  StepGroup(super.label, this.steps);
+}
+
 /// The reason a step has failed
 class StepError {
   /// A short reason, e.g. `exited with code 1`

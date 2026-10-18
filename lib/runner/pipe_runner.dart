@@ -71,15 +71,7 @@ class PipeRunner {
     List<StepState> states = [];
     for (PipeStage stage in stages) {
       for (int i = 0; i < stage.steps.length; i++) {
-        states.add(
-          StepState(
-            step: stage.steps[i],
-            stage: stage,
-            number: states.length + 1,
-            isFirstInStage: i == 0,
-            isLastInStage: i == stage.steps.length - 1,
-          ),
-        );
+        states.add(_createState(stage.steps[i], stage, null, "${states.length + 1}", i == stage.steps.length - 1));
       }
     }
 
@@ -89,8 +81,7 @@ class PipeRunner {
     bool stopped = false;
     for (StepState state in states) {
       if (stopped) {
-        state.skip("an earlier step has failed");
-        _emit(StepFinished(state));
+        _skip(state, "an earlier step has failed");
         continue;
       }
 
@@ -108,30 +99,72 @@ class PipeRunner {
     return result;
   }
 
+  /// Creates the state of the [step], along with the states of its steps when it is a group
+  StepState _createState(PipeStep step, PipeStage stage, StepState? parent, String number, bool isLast) {
+    StepState state = StepState(step: step, stage: stage, parent: parent, number: number, isLast: isLast);
+    if (step is StepGroup) {
+      for (int i = 0; i < step.steps.length; i++) {
+        state.children.add(_createState(step.steps[i], stage, state, "$number.${i + 1}", i == step.steps.length - 1));
+      }
+    }
+    return state;
+  }
+
   Future<void> _runStep(StepState state) async {
     state.start();
     _emit(StepStarted(state));
 
-    _RunnerStepContext context = _RunnerStepContext(this, state);
-    StepError? error;
-    try {
-      switch (state.step) {
-        case CommandStep step:
-          error = StepError.fromCommand(
-            await context.runCommand(step.executable, step.arguments, redactions: step.redactions),
-          );
-        case ActionStep step:
-          error = await step.action(context);
+    StepError? error = switch (state.step) {
+      StepGroup _ => await _runGroup(state),
+      ActionStep step => await _runAction(state, step.action),
+      CommandStep step => await _runAction(
+        state,
+        (StepContext context) async => StepError.fromCommand(
+          await context.runCommand(step.executable, step.arguments, redactions: step.redactions),
+        ),
+      ),
+    };
+
+    state.finish(error);
+    _emit(StepFinished(state));
+  }
+
+  /// Runs the steps of a group in order, until one of them fails
+  Future<StepError?> _runGroup(StepState group) async {
+    StepState? failed;
+    for (StepState child in group.children) {
+      if (failed != null) {
+        _skip(child, "${failed.step.label} has failed");
+        continue;
       }
+      await _runStep(child);
+      if (child.status == StepStatus.failed) {
+        failed = child;
+      }
+    }
+    return failed == null ? null : StepError("${failed.step.label} has failed");
+  }
+
+  /// Runs the work of a step that is not a group
+  Future<StepError?> _runAction(StepState state, Future<StepError?> Function(StepContext context) action) async {
+    _RunnerStepContext context = _RunnerStepContext(this, state);
+    try {
+      return await action(context);
     } catch (e, stackTrace) {
       // The steps return their errors as values, so getting here is a bug in the step.
       // Catching it keeps the rest of the run, its summary, and the log file intact
       context.log("Unexpected error: $e\n$stackTrace");
-      error = StepError("unexpected error: $e");
+      return StepError("unexpected error: $e");
     }
+  }
 
-    state.finish(error);
+  /// Marks the [state], and all the steps of its group, as skipped
+  void _skip(StepState state, String reason) {
+    state.skip(reason);
     _emit(StepFinished(state));
+    for (StepState child in state.children) {
+      _skip(child, reason);
+    }
   }
 
   void _emit(PipeEvent event) {

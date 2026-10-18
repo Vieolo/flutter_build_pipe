@@ -21,12 +21,12 @@ class WebUtils {
   ///
   /// By adding the version number, the browser will re-fetch the files again
   ///
-  /// It is run as a part of the web build step, so it reports through the [context] of that step
+  /// It runs as its own step after the web build, and reports through the [context] of that step
   static Future<StepError?> applyCacheBustPostBuild(BPConfig config, StepContext context) async {
     WebVersioningType versioningType = config.web?.webConfig?.webVersioningType ?? WebVersioningType.hash;
-    context.status(versioningType.isHash ? "Applying web cache bust" : "Applying web cache bust for version: ${config.version}");
 
     String vValue = versioningType.isHash ? md5.convert(utf8.encode(DateTime.now().toIso8601String())).toString() : config.version;
+    context.log("[query param] > v=$vValue");
 
     (String, String) mainDartJSPattern = (
       r'main\.dart\.js',
