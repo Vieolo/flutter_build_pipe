@@ -1,3 +1,30 @@
+## 0.4.0
+
+2026-10-18
+- Redesigned the terminal output
+- Added the `output` field to the workflows, with the values `auto`, `interactive`, `plain`, `verbose`, and `json`. `json` writes the run as JSON Lines, for scripts and agents.
+- Added the `--bp-output` CLI option to both commands, which overrides the `output` of the workflow without changing the config
+- With `output: auto`, a set `CI` env variable now counts as no terminal, so the steps are printed line by line in a CI
+- The messages printed outside of a run, such as the errors of the config, no longer contain color codes when the output is not a terminal
+- The redacted values, such as the App Store Connect keys, are now replaced line by line, so a value split between two chunks of the output is no longer missed
+- Fixed the crash of the `publish` command when the iOS or Android platform of a workflow has a build config but no publish config
+- A missing executable, or a failed authentication with the Play Store API, now fails its step instead of crashing the command
+- An invalid UTF-8 character in the output of a command no longer crashes the command
+- Closing the output early, e.g. by piping it to `head`, no longer crashes the run. The run finishes, and the log file still has all of it
+- Added hooks around the build and the publish of each platform: `pre_command`, and `post_command` with `on_success` and `finally`
+- Added `pre_platform_run` and `post_platform_run` to the workflows, with separate hooks for the `build` and `publish` commands. `on_success` runs only when nothing has failed, and `finally` runs whether anything has failed or not
+- The hooks get env variables describing the run, such as the platform, the status, and the platforms that have succeeded or failed
+- A mistake in the hooks, such as an unknown key or an empty command, stops the command before anything runs
+
+**Breaking changes**:
+
+- The minimum Dart SDK version is now 3.10.7
+- The `build` and `publish` commands now exit with the code `1` when any step fails. Previously, a failed platform build or store upload still exited with the code `0`
+- The log file has a new format, with one numbered section per step and a summary of the run at the end
+- `pre_build_command` and `post_build_command` are replaced by `pre_platform_run.build` and `post_platform_run.build`. The old keys are no longer read, and a workflow using them stops with an error
+- The platforms now always run in the order Android, iOS, macOS, Windows, Linux, and Web, for both `build` and `publish`. Previously, iOS ran first
+- `print_stdout` field is replaced by `output`. It is no longer read and has no effect, and a warning pointing to the migration guide is shown while it is in the config. `print_stdout: true` is now `output: verbose`
+
 ## 0.3.2
 
 2026-04-06
