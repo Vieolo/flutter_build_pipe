@@ -9,7 +9,7 @@
 
 
 ## Build
-Android build is supported via the `pubspec` config. At this time, only the `build_command` is supported for the build process.
+Android build is supported via the `pubspec` config. Besides the `build_command`, you can add the `pre_command` and `post_command` hooks, as with every platform. Read more in the [run order & hooks doc](../hooks/hooks_intro.md).
 
 
 
@@ -22,7 +22,7 @@ To setup the publish capabilities for Android, you need to follow these steps:
 1. Create a Google Cloud Platform (GCP) account if you don't have one.
 2. Create or select the project related to your app.
 3. Enable the [Google Play Android Developer API](https://console.cloud.google.com/apis/api/androidpublisher.googleapis.com/) for your project, if not enabled already
-4. Create a service account by visiting `IAM & Admin` > `Service Accounts` > `Create Service Account` in the Google Cloud Platform. You only need to proved a name and an ID for the service account. After successful creation, you will have an email ID for the service account.
+4. Create a service account by visiting `IAM & Admin` > `Service Accounts` > `Create Service Account` in the Google Cloud Platform. You only need to provide a name and an ID for the service account. After successful creation, you will have an email ID for the service account.
 5. Create a JSON API key for the newly created service account by opening the details of the service account and visiting the `Keys` section. After creating the JSON key, it will be automatically downloaded.
 6. Place the key in the project. In the next section, I'll discuss the options.
 7. Move to the Play Store
@@ -43,14 +43,17 @@ Here is a sample of the publish config for Android:
 
 ```yaml
 build_pipe:
- platforms:
-    android:
-      build_command: flutter build appbundle
-      publish:
-        outputFilePath: build/app/outputs/bundle/release/app-release.aab
-        bundleID: com.example.yourapp
-        releaseTrack: internal
-        credentialPath: PLAY_API_KEY_PATH # optional env variabl key
+  workflows:
+    default:
+      platforms:
+        android:
+          build:
+            build_command: flutter build appbundle
+          publish:
+            outputFilePath: build/app/outputs/bundle/release/app-release.aab
+            bundleID: com.example.yourapp
+            releaseTrack: internal
+            credentialPath: PLAY_API_KEY_PATH # optional env variable key
 ```
 
 Here is a brief explanation for the fields:

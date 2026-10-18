@@ -1,97 +1,40 @@
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/config/platform_specific_config.dart';
-import 'package:build_pipe/utils/process.utils.dart';
+import 'package:build_pipe/config/web_specific_config.dart';
+import 'package:build_pipe/runner/pipe_step.dart';
 import 'package:build_pipe/utils/web.utils.dart';
 
-/// The utility class for performing the builds
-/// for different platforms
+/// The utility class for creating the build steps
+/// of different platforms. The steps are put in order by `PipePlan`
 class PipeBuilder {
-  /// The actual function running the build command
-  /// This function is private and is called via platform specific interface
-  static Future<(int, List<String>)> _runBuildCommand(
-    BPConfig config,
-    PlatformConfig platformConfig,
-    String userfacingPlatform,
-  ) async {
-    // Safety check in case an empty build command is passed
-    // and the lack of build command is not caught by the config parser
-    if (platformConfig.buildCommand.isEmpty) {
-      return (0, <String>[]);
-    }
-
-    final buildCommand = ProcessHelper.splitCommand(platformConfig.buildCommand);
-    return await ProcessHelper.runCommandUsingConfig(
-      executable: buildCommand[0],
+  /// The step running the build command of a platform
+  static PipeStep buildCommandStep(BPConfig config, PlatformConfig platformConfig, String label) {
+    return CommandStep.fromString(
+      label,
+      platformConfig.buildCommand,
       // Appending any additional command line arguments passed down from build_pipe:build command
-      arguments: buildCommand.sublist(1) + config.cmdArgs,
-      config: config,
-      startMessage: "└── Building $userfacingPlatform...",
-      clearStartMessage: true,
-      successMessage: "└── √ $userfacingPlatform build is done\n",
-      errorMessage: "└── X There was an error building for $userfacingPlatform\n",
-      exitIfError: false,
+      extraArguments: config.cmdArgs,
     );
   }
 
-  /// Builds for `iOS`
-  static Future<void> buildIOS(BPConfig config) async {
-    await _runBuildCommand(config, config.ios!, "iOS");
-  }
-
-  /// Builds for `Android`
-  static Future<void> buildAndroid(BPConfig config) async {
-    await _runBuildCommand(config, config.android!, "Android");
-  }
-
-  /// Builds for `macOS`
-  static Future<void> buildMacOS(BPConfig config) async {
-    await _runBuildCommand(config, config.macos!, "macOS");
-  }
-
-  /// Builds for `Linux`
-  static Future<void> buildLinux(BPConfig config) async {
-    await _runBuildCommand(config, config.linux!, "Linux");
-  }
-
-  /// Builds for `Windows`
-  static Future<void> buildWindows(BPConfig config) async {
-    await _runBuildCommand(config, config.windows!, "Windows");
-  }
-
-  /// Builds for `web`
-  /// After the build process is completed, if not prevented
-  /// via the pubspec config, it will handle the web cache busting as well
-  static Future<void> buildWeb(BPConfig config) async {
-    await _runBuildCommand(config, config.web!, "Web");
-    if (config.web!.webConfig!.addVersionQueryParam == true) {
-      await WebUtils.applyCacheBustPostBuild(config);
-    }
-  }
-
-  /// Initiates the build for all platforms mentioned
-  /// in the config
-  static Future<void> buildAll(BPConfig config) async {
-    for (final platform in config.buildPlatforms) {
-      switch (platform) {
-        case TargetPlatform.ios:
-          await buildIOS(config);
-          break;
-        case TargetPlatform.android:
-          await buildAndroid(config);
-          break;
-        case TargetPlatform.macos:
-          await buildMacOS(config);
-          break;
-        case TargetPlatform.windows:
-          await buildWindows(config);
-          break;
-        case TargetPlatform.linux:
-          await buildLinux(config);
-          break;
-        case TargetPlatform.web:
-          await buildWeb(config);
-          break;
-      }
+  /// The steps run after the build command of a platform, e.g. the cache busting of web
+  static List<PipeStep> extraBuildSteps(BPConfig config, TargetPlatform platform) {
+    switch (platform) {
+      case TargetPlatform.web:
+        if (config.web?.webConfig?.addVersionQueryParam != true) return [];
+        WebVersioningType versioningType = config.web?.webConfig?.webVersioningType ?? WebVersioningType.hash;
+        return [
+          ActionStep(
+            "Cache bust (${versioningType.isHash ? "hash" : "version ${config.version}"})",
+            (StepContext context) => WebUtils.applyCacheBustPostBuild(config, context),
+          ),
+        ];
+      case TargetPlatform.ios:
+      case TargetPlatform.android:
+      case TargetPlatform.macos:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return [];
     }
   }
 }

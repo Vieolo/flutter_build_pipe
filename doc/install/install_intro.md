@@ -27,32 +27,45 @@ build_pipe:
   # required
   workflows:
     default:
-      # Whether to clean flutter via `flutter clean` before the builds.
+      # Whether to clean flutter via `flutter clean`, followed by `flutter pub get`, before the builds.
       # optional -- default: true
       clean_flutter: true
       # Whether to generate log files
       # optional -- default: true
       generate_log: true
-      # Whether to print the output of the commands to the terminal as they are being run
-      # optional -- default: false
-      print_stdout: false
-      # The command that will be run before the platforms are built
-      # This command will be executed as it's provided
+      # How the output of the run is shown.
+      # The options are: auto | interactive | plain | verbose | json
+      # `verbose` also prints the whole output of the commands as they run
+      # The `--bp-output` flag overrides it, e.g. `--bp-output=plain`
+      # optional -- default: auto
+      output: auto
+      # The commands run before the platforms, for each build_pipe command
       # Useful for running code generators or other pre-build tasks
+      # When it fails, no platform runs
+      # Read more about the hooks and the run order in the hooks doc
       # optional -- default: null
-      pre_build_command: your pre-build command # e.g. dart run build_runner build --delete-conflicting-outputs
-      # The command that will be run after the all platforms have been
-      # built (successfully or not)
-      # This command will be executed as it's provided
+      pre_platform_run:
+        build: your pre-build command # e.g. dart run build_runner build --delete-conflicting-outputs
+        publish: your pre-publish command
+      # The commands run after the platforms, for each build_pipe command
+      # `on_success` runs only when nothing has failed, and `finally` runs in any case
       # optional -- default: null
-      post_build_command: your post-build command # e.g. sh ./post-build.sh
+      post_platform_run:
+        build:
+          on_success: your post-build command # e.g. sh ./tag_release.sh
+          finally: your cleanup command # e.g. sh ./cleanup.sh
+        publish:
+          on_success: your post-publish command
+          finally: your cleanup command
       # The environment variable pointing to the location
       # of the derived data of XCode
       # If provided, the derived data will be erased before iOS or macOS builds
       # optional -- default: null
       xcode_derived_data_path_env_key: YOUR_ENV_VAR_KEY_TO_XCODE
       # The target platforms you wish to build for
-      # required -- At least on platform should be added
+      # required -- At least one platform should be added
+      # The platforms always run in this order, regardless of their order here:
+      # android, ios, macos, windows, linux, web
       platforms:
         # Read below to know about the common and platform-specific properties of each platform object
         ios:
@@ -83,6 +96,8 @@ build_pipe:
 
 ---
 ---
+Read about the hooks and the order of the steps in the [run order & hooks doc](../hooks/hooks_intro.md), and about the ways a run can be shown in the [output doc](../output/output_intro.md).
+
 You need at least one target platform using their name, as made above. Target platforms has some generic fields which are used by all platforms, such as `build_command` and some platform-specific fields. Here, I explain the common fields first, and then add the platform-specific fields.
 
 ```yaml
@@ -98,6 +113,17 @@ common:
     # The command is run as you provide it
     # required if build config is present
     build_command: your build command      
+    # The command run before the build of the platform
+    # When it fails, the build of the platform is skipped
+    # optional -- default: null
+    pre_command: your command # e.g. sh ./install_certificates.sh
+    # The commands run after the build of the platform
+    # `on_success` runs only when nothing of the platform has failed, and `finally` runs in any case
+    # The `publish` config of iOS and Android accepts the same `pre_command` and `post_command`
+    # optional -- default: null
+    post_command:
+      on_success: your command # e.g. sh ./upload_symbols.sh
+      finally: your command # e.g. sh ./remove_certificates.sh
 
 # These properties are only applicable to web
 web:
@@ -191,7 +217,7 @@ android:
       # The default path is -> `./private_keys/play_api_key.json` (in the project root)
       #
       # Optional
-      credentialPath: PLAY_API_KEY_PATH # optional env variabl key
+      credentialPath: PLAY_API_KEY_PATH # optional env variable key
 
 # These properties are only applicable to macos
 macos:

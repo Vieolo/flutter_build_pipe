@@ -19,12 +19,18 @@ and the Flutter guide for
 
 The pipeline for building & publishing your Flutter app for different target platforms.
 
+## Why this project exists
+`flutter_build_pipe` aims to be a pure-dart tool for building and releasing Flutter applications with minimal setup and first-party support for Flutter's components and occasional shortcomings.
+
 ## Features
 
 #### General
 - Specify platforms, build commands, and your preferences in `pubspec.yaml`
 - Logs the output of all build & publish commands for future reviews
 - Define multiple workflows for different build, environment, etc.
+- Hook your own commands before and after the whole run and each platform, with `on_success` and `finally` hooks
+- Shows the run as a live tree in the terminal, line by line in CI, or as JSON for scripts and agents
+- Exits with the code `1` when any step fails, so a CI stops at a failed build
 
 #### iOS & macOS
 - Publishing the iOS app to App Store
@@ -34,40 +40,54 @@ The pipeline for building & publishing your Flutter app for different target pla
 - Publishing the Android app to the Play Store
 
 #### Web
-- Adds the version query paramter to build files post-build to solve the caching problem of Flutter web (e.g. `flutter_bootstrap.js?v=0.12.1`)
+- Adds the version query parameter to build files post-build to solve the caching problem of Flutter web (e.g. `flutter_bootstrap.js?v=0.12.1`)
 
 
 ## Usage
-Once the configuration is added to your project, you can run the desired command via:
+Once the configuration is added to your project, `flutter_build_pipe` offers you two commands:
 
 ```bash
 ##### BUILD #####
-
 # To build for all given platforms in the default workflow
 dart run build_pipe:build
 
-# To build for all given platforms in a named workflow
-dart run build_pipe:build --workflow=your_workflow_name
+##### PUBLISH #####
+# To publish the built app to the given platforms in the default workflow
+dart run build_pipe:publish
+```
 
-# To use one (or more) of the platforms defined in a workflow (comma-separated)
-dart run build_pipe:build --override-target-platforms=android,ios,web
+Both commands support these flags:
 
+```bash
+# To build for all given platforms in a named workflow. If omitted, the `default`
+# workflow is run
+--workflow=your_workflow_name
+
+# To use only one (or more) of the platforms defined in a workflow (comma-separated),
+# ignoring the other platforms. It's useful to run the build/publish of a single platform
+# that failed in the previous runs. If omitted, all platforms of the workflow is used
+--override-target-platforms=android
+--override-target-platforms=android,ios,web
+
+# To choose how the run is shown, overriding the `output` field of the workflow
+# The values are: auto | interactive | plain | verbose | json
+# If omitted, the output field of the config is used. If both the flag and the config
+# fields are absent, the default value of `auto` is used
+--bp-output=plain
+
+# To see the options of a command
+--help
+
+# Example
+dart run build_pipe:build --workflow=your_workflow_name --override-target-platforms=android --bp-output=json
+```
+
+Besides the above known flags, any other args given will pass down to the build command of a platform
+```bash
 # The build command will funnel all other args passed (e.g., --dart-define) to the build
 # commands on all platforms
 # This allows github actions etc to pass environment vars down to the build cmd without editing the yaml file
 dart run build_pipe:build --dart-define=ENVIRONMENT=prod
-
-##### PUBLISH #####
-
-# To publish the built app to the given platforms in the default workflow
-dart run build_pipe:publish
-
-# To publsih the built app for all given platforms in a named workflow
-dart run build_pipe:publish --workflow=your_workflow_name
-
-# To use one (or more) of the platforms defined in a workflow (comma-separated)
-dart run build_pipe:publish --override-target-platforms=android
-
 
 ```
 
@@ -88,7 +108,10 @@ Read the topics below to setup and configure your project. The configuration is 
 
 #### Misc.
 - [Logging](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/logging/logging_intro.md)
+- [Output & JSON](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/output/output_intro.md)
+- [Run order & hooks](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/hooks/hooks_intro.md)
 
 #### Migration
+- [Migration from 0.3 to >= 0.4](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_to_0_4.md)
 - [Migration from < 0.3.0](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_0.md)
 
