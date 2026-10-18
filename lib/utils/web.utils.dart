@@ -3,10 +3,8 @@ import 'dart:convert';
 
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/config/web_specific_config.dart';
-import 'package:build_pipe/utils/console.utils.dart';
-import 'package:build_pipe/utils/log.utils.dart';
+import 'package:build_pipe/runner/pipe_step.dart';
 import 'package:crypto/crypto.dart';
-import 'package:mansil/mansil.dart';
 import 'package:path/path.dart' as p;
 
 /// The utility class for handling web specific functionalities
@@ -22,13 +20,11 @@ class WebUtils {
   /// add the version number to some paths. e.g. `main.dart.js?v=0.12.3`
   ///
   /// By adding the version number, the browser will re-fetch the files again
-  static Future<void> applyCacheBustPostBuild(BPConfig config) async {
+  ///
+  /// It is run as a part of the web build step, so it reports through the [context] of that step
+  static Future<StepError?> applyCacheBustPostBuild(BPConfig config, StepContext context) async {
     WebVersioningType versioningType = config.web?.webConfig?.webVersioningType ?? WebVersioningType.hash;
-    String introText = versioningType.isHash ? "└── Applying web cache bust" : "└── Applying web cache bust for version: ${config.version}";
-
-    List<String> logLines = LogUtils.getActionStartLines(introText);
-    stdout.write('${Mansil.cursorUp1}${Mansil.clearLine}\r');
-    Console.logInfo(introText);
+    context.status(versioningType.isHash ? "Applying web cache bust" : "Applying web cache bust for version: ${config.version}");
 
     String vValue = versioningType.isHash ? md5.convert(utf8.encode(DateTime.now().toIso8601String())).toString() : config.version;
 
@@ -61,35 +57,23 @@ class WebUtils {
       if (await file.exists()) {
         try {
           String content = await file.readAsString();
-          List<String> ll = ["\n[file] > ${single.key}"];
+          context.log("[file] > ${single.key}");
           for (var i = 0; i < single.value.length; i++) {
             content = content.replaceAll(
               RegExp(single.value[i].$1, caseSensitive: false),
               single.value[i].$2,
             );
-            ll.add(
-              "[replacement] > ${single.value[i].$1} to ${single.value[i].$2}",
-            );
+            context.log("[replacement] > ${single.value[i].$1} to ${single.value[i].$2}");
           }
           await file.writeAsString(content);
-          logLines.addAll(ll);
         } catch (e) {
-          print(e.toString());
-          logLines.add("\n[file] > ${single.key}");
-          logLines.add("[error] > ${e.toString()}");
+          context.warn("The cache bust could not be applied to ${p.basename(single.key)} -> ${e.toString()}");
         }
       } else {
-        print('File not found: ${p.basename(single.key)}');
-        logLines.add("\n[file] > ${single.key}");
-        logLines.add(
-          "[error] > This file could not be found: ${p.basename(single.key)}",
-        );
+        context.warn("The cache bust is not applied to ${p.basename(single.key)}, since the file could not be found");
       }
     }
 
-    stdout.write('${Mansil.cursorUp1}${Mansil.clearLine}\r');
-    Console.logSuccess("└── √ Web cache bust is done");
-    logLines.addAll(LogUtils.getActionEndLines());
-    await LogUtils.appendLogUsingStringList(config, logLines);
+    return null;
   }
 }

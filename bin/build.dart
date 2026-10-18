@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:build_pipe/dx/cli_help.dart';
+import 'package:build_pipe/runner/pipe_events.dart';
+import 'package:build_pipe/runner/pipe_runner.dart';
+import 'package:build_pipe/runner/pipe_step.dart';
 import 'package:build_pipe/utils/builder.utils.dart';
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
-import 'package:build_pipe/utils/process.utils.dart';
 import 'package:build_pipe/utils/validation.utils.dart';
 import 'package:build_pipe/utils/xcode.utils.dart';
 
@@ -32,87 +34,37 @@ void main(List<String> args) async {
     exit(1);
   }
 
-  Console.logInfo("\nStarting the build process...\n");
-  print("The following target platforms are detected:");
-  for (var i = 0; i < config.buildPlatforms.length; i++) {
-    String prefix = "├──";
-    if (i == config.buildPlatforms.length - 1) {
-      prefix = "└──";
-    }
-    print("$prefix ${config.buildPlatforms[i].name}${i == config.buildPlatforms.length - 1 ? "\n" : ""}");
-  }
+  bool hasPreBuildCommand = config.preBuildCommand != null && config.preBuildCommand!.isNotEmpty;
+  bool hasPostBuildCommand = config.postBuildCommand != null && config.postBuildCommand!.isNotEmpty;
 
-  if (config.cleanFlutter || config.needXCodeDerivedCleaning) {
-    Console.logInfo("Pre-build cleanups...");
-  }
+  List<PipeStage> stages = [
+    // Nothing should be built when a pre-build step fails
+    PipeStage(
+      "Pre-build",
+      steps: [
+        if (config.needXCodeDerivedCleaning) XCodeUtils.deleteDerivedDataStep(config),
+        if (config.cleanFlutter) CommandStep("flutter clean", executable: "flutter", arguments: ["clean"]),
+        if (config.cleanFlutter) CommandStep("flutter pub get", executable: "flutter", arguments: ["pub", "get"]),
+        if (hasPreBuildCommand) CommandStep.fromString("Pre-build command", config.preBuildCommand!),
+      ],
+    ),
+    // The platforms are independent, so a failed build should not stop the others
+    PipeStage(
+      "Build",
+      steps: PipeBuilder.buildSteps(config),
+      onFailure: FailurePolicy.continueRun,
+    ),
+    // The post-build command runs after all platforms have been built, successfully or not
+    PipeStage(
+      "Post-build",
+      steps: [
+        if (hasPostBuildCommand) CommandStep.fromString("Post-build command", config.postBuildCommand!),
+      ],
+    ),
+  ];
 
-  if (config.needXCodeDerivedCleaning) {
-    String? xcodePath = Platform.environment[config.xcodeDerivedKey!];
-    if (xcodePath == null || xcodePath.isEmpty) {
-      Console.logError(
-        "└── ${config.xcodeDerivedKey} is either not a valid environmental variable or has an empty value!",
-      );
-    } else {
-      bool deleted = await XCodeUtils.deleteDerivedData(config, xcodePath);
-      if (!deleted) {
-        exit(1);
-      }
-    }
-  }
-
-  if (config.cleanFlutter) {
-    await ProcessHelper.runCommandUsingConfig(
-      executable: "flutter",
-      arguments: ["clean"],
-      config: config,
-      startMessage: "└── Cleaning flutter existing builds...",
-      clearStartMessage: true,
-      successMessage: "└── √ Flutter cleaned",
-      errorMessage: "└── X There was an error while cleaning the Flutter build",
-    );
-
-    await ProcessHelper.runCommandUsingConfig(
-      executable: "flutter",
-      arguments: ["pub", "get"],
-      config: config,
-      startMessage: "└── Getting pub packages...",
-      clearStartMessage: true,
-      successMessage: "└── √ Flutter pub packages synced\n",
-      errorMessage: "└── X There was an error while getting pub packages",
-    );
-  }
-
-  if (config.preBuildCommand != null && config.preBuildCommand!.isNotEmpty) {
-    final preCommand = ProcessHelper.splitCommand(config.preBuildCommand!);
-    await ProcessHelper.runCommandUsingConfig(
-      executable: preCommand[0],
-      arguments: preCommand.length > 1 ? preCommand.sublist(1) : [],
-      config: config,
-      startMessage: "\nRunning pre-build command...",
-      clearStartMessage: true,
-      successMessage: "√ pre-build command is completed",
-      errorMessage: "X pre-build command has failed",
-    );
-  }
-
-  Console.logInfo("Building the app...");
-  await PipeBuilder.buildAll(config);
-
-  if (config.postBuildCommand != null && config.postBuildCommand!.isNotEmpty) {
-    final postCommand = ProcessHelper.splitCommand(config.postBuildCommand!);
-    await ProcessHelper.runCommandUsingConfig(
-      executable: postCommand[0],
-      arguments: postCommand.length > 1 ? postCommand.sublist(1) : [],
-      config: config,
-      startMessage: "\nRunning post-build command...",
-      clearStartMessage: true,
-      successMessage: "√ post-build command is completed",
-      errorMessage: "X post-build command has failed",
-    );
-  }
-
-  print("\nBuild is completed");
-  if (config.generateLog) {
-    print("log is generated at: ${config.logFile}\n");
+  PipeRunResult result = await PipeRunner.runWithConfig(config, command: "build", stages: stages);
+  if (result.hasFailures) {
+    exit(1);
   }
 }

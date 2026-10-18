@@ -1,56 +1,35 @@
 import 'dart:io';
 
 import 'package:build_pipe/config/config.dart';
-import 'package:build_pipe/utils/console.utils.dart';
-import 'package:build_pipe/utils/log.utils.dart';
-import 'package:mansil/mansil.dart';
+import 'package:build_pipe/runner/pipe_step.dart';
 
 /// Utility class for XCode specific functionalities
 class XCodeUtils {
-  /// This function deletes the derived data of the XCode before the build
+  /// The step deleting the derived data of the XCode before the build
   /// to prevent faulty caches affecting the production build
-  static Future<bool> deleteDerivedData(
-    BPConfig config,
-    String derivedPath,
-  ) async {
-    bool deleted = false;
-    List<String> logLines = LogUtils.getActionStartLines(
-      "Deleting the derived data of XCode",
-    );
-    Console.logInfo("└── Deleting the XCode derived data...");
-
-    var dir = Directory(derivedPath);
-    if (!await dir.exists()) {
-      logLines.addAll([
-        "\n[error] The given path for XCode is invalid",
-        "[path] $derivedPath\n",
-      ]);
-      Console.logError(
-        "The given path for XCode derived data is invalid -> $derivedPath",
-      );
-    } else {
-      try {
-        dir.deleteSync(recursive: true);
-        logLines.addAll([
-          "\n[folder] $derivedPath",
-          "[action] deleted",
-        ]);
-        stdout.write('${Mansil.cursorUp1}${Mansil.clearLine}\r');
-        Console.logSuccess("└── √ XCode derived data is deleted");
-        deleted = true;
-      } catch (e) {
-        logLines.addAll([
-          "\n[error] ${e.toString()}",
-          "[path] $derivedPath\n",
-        ]);
-        Console.logError(
-          "There was an error deleting the derived data -> ${e.toString()}",
-        );
+  ///
+  /// The path of the derived data is read from the env variable named by `xcode_derived_data_path_env_key`
+  static PipeStep deleteDerivedDataStep(BPConfig config) {
+    return ActionStep("Delete the XCode derived data", (StepContext context) async {
+      String key = config.xcodeDerivedKey ?? "";
+      String? derivedPath = Platform.environment[key];
+      if (derivedPath == null || derivedPath.isEmpty) {
+        context.warn("$key is either not a valid environmental variable or has an empty value, so the derived data is not deleted");
+        return null;
       }
-    }
 
-    logLines.addAll(LogUtils.getActionEndLines());
-    await LogUtils.appendLogUsingStringList(config, logLines);
-    return deleted;
+      Directory dir = Directory(derivedPath);
+      if (!await dir.exists()) {
+        return StepError("the given path for the XCode derived data is invalid", details: [derivedPath]);
+      }
+
+      try {
+        await dir.delete(recursive: true);
+      } on FileSystemException catch (e) {
+        return StepError("the derived data could not be deleted", details: [e.toString()]);
+      }
+      context.log("deleted $derivedPath");
+      return null;
+    });
   }
 }

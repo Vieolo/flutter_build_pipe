@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/config/platform_specific_config.dart';
-import 'package:build_pipe/utils/console.utils.dart';
+import 'package:build_pipe/runner/pipe_step.dart';
 import 'package:build_pipe/utils/process.utils.dart';
 import 'package:yaml/yaml.dart' as yaml;
 
@@ -92,22 +92,15 @@ class ApplePublishConfig {
     );
   }
 
-  /// Uploads the build artifact to the iOS App Store
-  Future<void> uploadToIOS({
-    required BPConfig config,
-  }) async {
-    var iosOut = await ProcessHelper.runCommandUsingConfig(
-      startMessage: "Starting to publish the iOS app...",
-      errorMessage: "There was a problem in publishing the iOS app",
-      successMessage: "√ iOS app is successfully published",
-      executable: "xcrun",
-      exitIfError: false,
-      redactions: [
-        appAppleID,
-        issuerID,
-        keyID,
-      ],
-      arguments: [
+  /// The step uploading the build artifact to the iOS App Store
+  PipeStep uploadToIOSStep(BPConfig config) {
+    return ActionStep("iOS - App Store", (StepContext context) => _uploadToIOS(config, context));
+  }
+
+  Future<StepError?> _uploadToIOS(BPConfig config, StepContext context) async {
+    (CommandResult?, CommandError?) iosOut = await context.runCommand(
+      "xcrun",
+      [
         "altool",
         "--upload-package",
         outputFilePath,
@@ -130,19 +123,35 @@ class ApplePublishConfig {
         "--output-format",
         "json",
       ],
-      config: config,
+      redactions: [
+        appAppleID,
+        issuerID,
+        keyID,
+      ],
     );
 
-    if (iosOut.$1 != 0 && iosOut.$2.isNotEmpty) {
-      try {
-        Map<String, dynamic> iosErr = jsonDecode(iosOut.$2[0]);
-        if (iosErr.containsKey("product-errors")) {
-          List<dynamic> peList = iosErr["product-errors"];
-          for (var pe in peList) {
-            Console.logError("-- ${pe["userInfo"]["NSLocalizedFailureReason"] ?? "-"}\n");
-          }
-        }
-      } catch (_) {}
+    StepError? error = StepError.fromCommand(iosOut);
+    if (error == null || iosOut.$1 == null) return error;
+    return StepError(error.message, details: _productErrors(iosOut.$1!.output));
+  }
+
+  /// Reads the reasons of the failure from the JSON output of `altool`
+  List<String> _productErrors(List<String> output) {
+    String text = output.join("\n");
+    int start = text.indexOf("{");
+    int end = text.lastIndexOf("}");
+    if (start == -1 || end < start) return [];
+
+    try {
+      Map<String, dynamic> iosErr = jsonDecode(text.substring(start, end + 1));
+      if (!iosErr.containsKey("product-errors")) return [];
+      List<dynamic> peList = iosErr["product-errors"];
+      return [
+        for (var pe in peList) "${pe["userInfo"]?["NSLocalizedFailureReason"] ?? "-"}",
+      ];
+    } catch (_) {
+      // The output is not the expected JSON, and the user can still read it in the terminal or the log
+      return [];
     }
   }
 }

@@ -23,6 +23,7 @@ class BPConfig {
   String? preBuildCommand;
   String? postBuildCommand;
   List<String> cmdArgs;
+  String workflowName;
 
   BPConfig({
     this.android,
@@ -41,6 +42,7 @@ class BPConfig {
     required this.generateLog,
     required this.buildVersion,
     required this.cmdArgs,
+    this.workflowName = "default",
   });
 
   /// Parsed the config from the map
@@ -48,8 +50,9 @@ class BPConfig {
     yaml.YamlMap data,
     List<String> args,
     String version,
-    String buildVersion,
-  ) {
+    String buildVersion, {
+    String workflowName = "default",
+  }) {
     yaml.YamlMap platforms = data["platforms"] ?? yaml.YamlMap();
     (PlatformConfig?, List<BPConfigValidationError>) android = PlatformConfig.fromMap(platforms, TargetPlatform.android, "android");
     (PlatformConfig?, List<BPConfigValidationError>) iOS = PlatformConfig.fromMap(platforms, TargetPlatform.ios, "ios");
@@ -76,6 +79,7 @@ class BPConfig {
         version: version,
         buildVersion: buildVersion,
         cmdArgs: args,
+        workflowName: workflowName,
       ),
       [...android.$2, ...iOS.$2, ...macos.$2, ...linux.$2, ...windows.$2, ...web.$2],
     );
@@ -219,6 +223,7 @@ class BPConfig {
       pubspec["version"].split("+")[0],
       // just in case the + doesnt exist
       pubspec["version"].split("+").length > 1 ? pubspec["version"].split("+")[1] : "0",
+      workflowName: workflowName,
     );
 
     if (config.$1 != null && overriddenTargetPlatforms.isNotEmpty) {

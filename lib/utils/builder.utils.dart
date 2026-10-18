@@ -1,97 +1,71 @@
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/config/platform_specific_config.dart';
+import 'package:build_pipe/runner/pipe_step.dart';
 import 'package:build_pipe/utils/process.utils.dart';
 import 'package:build_pipe/utils/web.utils.dart';
 
-/// The utility class for performing the builds
-/// for different platforms
+/// The utility class for creating the build steps
+/// of different platforms
 class PipeBuilder {
-  /// The actual function running the build command
-  /// This function is private and is called via platform specific interface
-  static Future<(int, List<String>)> _runBuildCommand(
-    BPConfig config,
-    PlatformConfig platformConfig,
-    String userfacingPlatform,
-  ) async {
-    // Safety check in case an empty build command is passed
-    // and the lack of build command is not caught by the config parser
-    if (platformConfig.buildCommand.isEmpty) {
-      return (0, <String>[]);
+  /// The user-facing names of the platforms
+  static const Map<TargetPlatform, String> _platformNames = {
+    TargetPlatform.ios: "iOS",
+    TargetPlatform.android: "Android",
+    TargetPlatform.macos: "macOS",
+    TargetPlatform.linux: "Linux",
+    TargetPlatform.windows: "Windows",
+    TargetPlatform.web: "Web",
+  };
+
+  /// The build steps of all platforms mentioned in the config, in order
+  static List<PipeStep> buildSteps(BPConfig config) {
+    List<PipeStep> steps = [];
+    for (final platform in config.buildPlatforms) {
+      PlatformConfig? platformConfig = switch (platform) {
+        TargetPlatform.ios => config.ios,
+        TargetPlatform.android => config.android,
+        TargetPlatform.macos => config.macos,
+        TargetPlatform.linux => config.linux,
+        TargetPlatform.windows => config.windows,
+        TargetPlatform.web => config.web,
+      };
+
+      // Safety check in case an empty build command is passed
+      // and the lack of build command is not caught by the config parser
+      if (platformConfig == null || platformConfig.buildCommand.isEmpty) continue;
+
+      if (platform == TargetPlatform.web) {
+        steps.add(_webBuildStep(config, platformConfig));
+      } else {
+        steps.add(
+          CommandStep.fromString(
+            _platformNames[platform]!,
+            platformConfig.buildCommand,
+            // Appending any additional command line arguments passed down from build_pipe:build command
+            extraArguments: config.cmdArgs,
+          ),
+        );
+      }
     }
-
-    final buildCommand = ProcessHelper.splitCommand(platformConfig.buildCommand);
-    return await ProcessHelper.runCommandUsingConfig(
-      executable: buildCommand[0],
-      // Appending any additional command line arguments passed down from build_pipe:build command
-      arguments: buildCommand.sublist(1) + config.cmdArgs,
-      config: config,
-      startMessage: "└── Building $userfacingPlatform...",
-      clearStartMessage: true,
-      successMessage: "└── √ $userfacingPlatform build is done\n",
-      errorMessage: "└── X There was an error building for $userfacingPlatform\n",
-      exitIfError: false,
-    );
-  }
-
-  /// Builds for `iOS`
-  static Future<void> buildIOS(BPConfig config) async {
-    await _runBuildCommand(config, config.ios!, "iOS");
-  }
-
-  /// Builds for `Android`
-  static Future<void> buildAndroid(BPConfig config) async {
-    await _runBuildCommand(config, config.android!, "Android");
-  }
-
-  /// Builds for `macOS`
-  static Future<void> buildMacOS(BPConfig config) async {
-    await _runBuildCommand(config, config.macos!, "macOS");
-  }
-
-  /// Builds for `Linux`
-  static Future<void> buildLinux(BPConfig config) async {
-    await _runBuildCommand(config, config.linux!, "Linux");
-  }
-
-  /// Builds for `Windows`
-  static Future<void> buildWindows(BPConfig config) async {
-    await _runBuildCommand(config, config.windows!, "Windows");
+    return steps;
   }
 
   /// Builds for `web`
   /// After the build process is completed, if not prevented
   /// via the pubspec config, it will handle the web cache busting as well
-  static Future<void> buildWeb(BPConfig config) async {
-    await _runBuildCommand(config, config.web!, "Web");
-    if (config.web!.webConfig!.addVersionQueryParam == true) {
-      await WebUtils.applyCacheBustPostBuild(config);
-    }
-  }
+  static PipeStep _webBuildStep(BPConfig config, PlatformConfig platformConfig) {
+    return ActionStep(_platformNames[TargetPlatform.web]!, (StepContext context) async {
+      List<String> buildCommand = ProcessHelper.splitCommand(platformConfig.buildCommand);
+      StepError? buildError = StepError.fromCommand(
+        await context.runCommand(buildCommand.first, [...buildCommand.skip(1), ...config.cmdArgs]),
+      );
+      // There is nothing to apply the cache bust to, when the build has failed
+      if (buildError != null) return buildError;
 
-  /// Initiates the build for all platforms mentioned
-  /// in the config
-  static Future<void> buildAll(BPConfig config) async {
-    for (final platform in config.buildPlatforms) {
-      switch (platform) {
-        case TargetPlatform.ios:
-          await buildIOS(config);
-          break;
-        case TargetPlatform.android:
-          await buildAndroid(config);
-          break;
-        case TargetPlatform.macos:
-          await buildMacOS(config);
-          break;
-        case TargetPlatform.windows:
-          await buildWindows(config);
-          break;
-        case TargetPlatform.linux:
-          await buildLinux(config);
-          break;
-        case TargetPlatform.web:
-          await buildWeb(config);
-          break;
+      if (platformConfig.webConfig?.addVersionQueryParam == true) {
+        return await WebUtils.applyCacheBustPostBuild(config, context);
       }
-    }
+      return null;
+    });
   }
 }

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/config/platform_specific_config.dart';
-import 'package:build_pipe/utils/console.utils.dart';
+import 'package:build_pipe/runner/pipe_step.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart' as yaml;
 import 'package:googleapis/androidpublisher/v3.dart' as play;
@@ -92,14 +92,16 @@ class AndroidPublishConfig {
   // Documentation:
   // https://developers.google.com/android-publisher/edits
 
-  /// Uploads the built app (either appbundle or apk) to the playstore
+  /// The step uploading the built app (either appbundle or apk) to the playstore
   /// using Play Store Developer API
   ///
   /// The user should create the correct credentials using GCP, downloads
   /// the JSON api key and place it in the path
-  Future<void> uploadToPlayStore({
-    required BPConfig config,
-  }) async {
+  PipeStep uploadToPlayStoreStep(BPConfig config) {
+    return ActionStep("Android - Play Store", (StepContext context) => _uploadToPlayStore(config, context));
+  }
+
+  Future<StepError?> _uploadToPlayStore(BPConfig config, StepContext context) async {
     google_auth.AutoRefreshingAuthClient? client;
 
     try {
@@ -110,19 +112,21 @@ class AndroidPublishConfig {
           File(getCredentialPath()).readAsStringSync(),
         );
       } catch (e) {
-        Console.logError("Error while using the Play Store API json credentials");
-        Console.logError(e.toString());
-        return;
+        return StepError("error while using the Play Store API json credentials", details: [e.toString()]);
       }
 
       // Getting the client for the service account, using the credentials
       // created via JSON file, with the publishing scope
       //
       // The client will have to be closed at the end of the function
-      client = await google_auth.clientViaServiceAccount(
-        credentials,
-        [play.AndroidPublisherApi.androidpublisherScope],
-      );
+      try {
+        client = await google_auth.clientViaServiceAccount(
+          credentials,
+          [play.AndroidPublisherApi.androidpublisherScope],
+        );
+      } catch (e) {
+        return StepError("error while authenticating with the Play Store API", details: [e.toString()]);
+      }
 
       // Creating the api object to call the Google play API
       play.AndroidPublisherApi api = play.AndroidPublisherApi(client);
@@ -130,7 +134,7 @@ class AndroidPublishConfig {
       // Calling the APIs
       //
       // 1. Create edit object for the app
-      Console.logInfo("Creating a '$releaseTrack' release for Android...");
+      context.status("Creating a '$releaseTrack' release");
       late play.AppEdit edit;
       try {
         edit = await api.edits.insert(play.AppEdit(), bundleID);
@@ -138,13 +142,12 @@ class AndroidPublishConfig {
           throw Exception("The created edit is invalid");
         }
       } catch (e) {
-        Console.logError("There was an error while creating an edit to the Play Store API");
-        Console.logError(e.toString());
-        return;
+        return StepError("error while creating an edit to the Play Store API", details: [e.toString()]);
       }
+      context.log("edit id: ${edit.id}");
 
       // 2. Upload the bundle or apk file
-      Console.logInfo("Uploading the build file for Android...");
+      context.status("Uploading the build file");
       try {
         await api.edits.bundles.upload(
           bundleID,
@@ -152,12 +155,11 @@ class AndroidPublishConfig {
           uploadMedia: play.Media(File(outputFilePath).openRead(), File(outputFilePath).lengthSync()),
         );
       } catch (e) {
-        Console.logError("There was an error while uploading the build file to the Play Store API");
-        Console.logError(e.toString());
-        return;
+        return StepError("error while uploading the build file to the Play Store API", details: [e.toString()]);
       }
 
       // 3. Assign a track to the edit
+      context.status("Assigning the build to the '$releaseTrack' track");
       try {
         await api.edits.tracks.update(
           play.Track(
@@ -177,19 +179,17 @@ class AndroidPublishConfig {
           releaseTrack,
         );
       } catch (e) {
-        Console.logError("There was an error while creating the $releaseTrack track in Play Store API");
-        Console.logError(e.toString());
-        return;
+        return StepError("error while creating the $releaseTrack track in Play Store API", details: [e.toString()]);
       }
 
       // 4. Commit the edit
+      context.status("Committing the release");
       try {
         await api.edits.commit(bundleID, edit.id!);
-        Console.logSuccess('√ Android app is successfully published!');
       } catch (e) {
-        Console.logError("There was an error while commiting the changes to the Play Store API");
-        Console.logError(e.toString());
+        return StepError("error while commiting the changes to the Play Store API", details: [e.toString()]);
       }
+      return null;
     } finally {
       // Closing the client, regardless of the outcome of the code
       client?.close();

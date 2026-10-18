@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/dx/cli_help.dart';
+import 'package:build_pipe/runner/pipe_events.dart';
+import 'package:build_pipe/runner/pipe_runner.dart';
+import 'package:build_pipe/runner/pipe_step.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/validation.utils.dart';
 
@@ -30,29 +33,20 @@ void main(List<String> args) async {
     exit(1);
   }
 
-  Console.logInfo("\nStarting the publish process...\n");
-  print("The following target platforms are detected:");
-  for (var i = 0; i < config.publishPlatforms.length; i++) {
-    String prefix = "├──";
-    if (i == config.publishPlatforms.length - 1) {
-      prefix = "└──";
-    }
-    print("$prefix ${config.publishPlatforms[i].name}${i == config.publishPlatforms.length - 1 ? "\n" : ""}");
-  }
+  List<PipeStage> stages = [
+    // The stores are independent, so a failed upload should not stop the others
+    PipeStage(
+      "Publish",
+      onFailure: FailurePolicy.continueRun,
+      steps: [
+        if (config.ios?.iosConfig?.publishConfig != null) config.ios!.iosConfig!.publishConfig!.uploadToIOSStep(config),
+        if (config.android?.androidConfig?.publishConfig != null) config.android!.androidConfig!.publishConfig!.uploadToPlayStoreStep(config),
+      ],
+    ),
+  ];
 
-  // -=-=-=-=-=-=
-  // iOS
-  // -=-=-=-=-=-=
-  if (config.ios != null && config.ios!.iosConfig!.publishConfig != null) {
-    var iosPub = config.ios!.iosConfig!.publishConfig!;
-    await iosPub.uploadToIOS(config: config);
-  }
-
-  // -=-=-=-=-=-=
-  // Android
-  // -=-=-=-=-=-=
-  if (config.android != null && config.android!.androidConfig!.publishConfig != null) {
-    var androidPub = config.android!.androidConfig!.publishConfig!;
-    await androidPub.uploadToPlayStore(config: config);
+  PipeRunResult result = await PipeRunner.runWithConfig(config, command: "publish", stages: stages);
+  if (result.hasFailures) {
+    exit(1);
   }
 }
