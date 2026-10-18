@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/log.utils.dart';
+import 'package:mansil/mansil.dart';
 
 /// Utility class for XCode specific functionalities
 class XCodeUtils {
@@ -34,7 +35,7 @@ class XCodeUtils {
           "\n[folder] $derivedPath",
           "[action] deleted",
         ]);
-        stdout.write('\x1B[1A\x1B[2K\r');
+        stdout.write('${Mansil.cursorUp1}${Mansil.clearLine}\r');
         Console.logSuccess("└── √ XCode derived data is deleted");
         deleted = true;
       } catch (e) {

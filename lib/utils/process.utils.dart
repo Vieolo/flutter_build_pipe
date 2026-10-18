@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:async/async.dart';
 import 'package:build_pipe/config/config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
+import 'package:mansil/mansil.dart';
 
 String _redact(String output, List<String>? redactions) {
   if (redactions == null || redactions.isEmpty) return output;
@@ -133,7 +134,7 @@ class ProcessHelper {
     }
 
     if (clearStartMessage == true) {
-      stdout.write('\x1B[1A\x1B[2K\r');
+      stdout.write('${Mansil.cursorUp1}${Mansil.clearLine}\r');
     }
 
     // The command has failed

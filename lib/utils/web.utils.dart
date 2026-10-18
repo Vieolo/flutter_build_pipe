@@ -6,6 +6,7 @@ import 'package:build_pipe/config/web_specific_config.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 import 'package:build_pipe/utils/log.utils.dart';
 import 'package:crypto/crypto.dart';
+import 'package:mansil/mansil.dart';
 import 'package:path/path.dart' as p;
 
 /// The utility class for handling web specific functionalities
@@ -26,7 +27,7 @@ class WebUtils {
     String introText = versioningType.isHash ? "└── Applying web cache bust" : "└── Applying web cache bust for version: ${config.version}";
 
     List<String> logLines = LogUtils.getActionStartLines(introText);
-    stdout.write('\x1B[1A\x1B[2K\r');
+    stdout.write('${Mansil.cursorUp1}${Mansil.clearLine}\r');
     Console.logInfo(introText);
 
     String vValue = versioningType.isHash ? md5.convert(utf8.encode(DateTime.now().toIso8601String())).toString() : config.version;
@@ -86,7 +87,7 @@ class WebUtils {
       }
     }
 
-    stdout.write('\x1B[1A\x1B[2K\r');
+    stdout.write('${Mansil.cursorUp1}${Mansil.clearLine}\r');
     Console.logSuccess("└── √ Web cache bust is done");
     logLines.addAll(LogUtils.getActionEndLines());
     await LogUtils.appendLogUsingStringList(config, logLines);
