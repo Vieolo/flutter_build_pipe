@@ -50,10 +50,10 @@ Each object has an `event` field. The fields are in `snake_case`, and the durati
 
 Each event of a step has the `number` and the `path` of the step:
 
-- `number`: the position of the step, e.g. `"3"`, or `"3.2"` for the second extra step of a platform
+- `number`: the position of the step, e.g. `"3"`, or `"3.2"` for the second step of a platform with hooks or extra steps
 - `path`: the title of the stage, the platform, and the label of the step, e.g. `["Build", "Web", "Cache bust (hash)"]`
 
-The labels can repeat, e.g. every platform with extra steps has a `Build` step, so use the `number` to tell the steps apart.
+The labels can repeat, e.g. every platform with hooks or extra steps has a `Build` step, so use the `number` to tell the steps apart.
 
 ### Events
 
@@ -79,7 +79,7 @@ The outcome of a step, in `step_finished` and in the `results` of `run_finished`
 - `warnings`: when the step has any
 - `recent_output`: the last lines of the output of a failed step
 
-The `steps`, `failed`, and `skipped` of `run_finished` count the steps of the stages, where a platform with extra steps counts once. A platform with extra steps has failed when any of its steps has failed.
+The `steps`, `failed`, and `skipped` of `run_finished` count the steps of the stages, where a platform with hooks or extra steps counts once. Such a platform has failed when any of its steps has failed.
 
 The output of the commands is not in the JSON, since it can be thousands of lines. It is in the log file, whose path is in `log_file`.
 

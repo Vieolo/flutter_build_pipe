@@ -88,16 +88,6 @@ dart run build_pipe:build --dart-define=ENVIRONMENT=prod
 Read the topics below to setup and configure your project. The configuration is quite simple, and you just need to do it once.
 
 
-## Failures and the exit code
-
-- When a pre-build step fails, nothing is built and the rest of the run is skipped
-- When the build of a platform fails, the other platforms are still built, and the post-build command still runs
-- When a step of a platform fails, the rest of the steps of that platform are skipped, e.g. the cache bust of web is skipped when the web build fails
-- When the upload to a store fails, the other stores are still published to
-
-The command exits with the code `1` if any step has failed.
-
-
 ## Topics
 
 #### Install & Setup
@@ -113,7 +103,9 @@ The command exits with the code `1` if any step has failed.
 #### Misc.
 - [Logging](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/logging/logging_intro.md)
 - [Output & JSON](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/output/output_intro.md)
+- [Run order & hooks](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/hooks/hooks_intro.md)
 
 #### Migration
+- [Migration from 0.3 to >= 0.4](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_to_0_4.md)
 - [Migration from < 0.3.0](https://github.com/Vieolo/flutter_build_pipe/blob/master/doc/migration/0_3_0.md)
 

@@ -20,8 +20,11 @@ build_pipe:
       clean_flutter: true
       generate_log: true
       output: auto
-      pre_build_command: "sh ./pre-build.sh"
-      post_build_command: "sh ./post-build.sh"
+      pre_platform_run:
+        build: "sh ./pre-build.sh"
+      post_platform_run:
+        build:
+          on_success: "sh ./post-build.sh"
       xcode_derived_data_path_env_key: PATH_TO_XCODE_DERIVED # the env variable key
       platforms:
         ios:

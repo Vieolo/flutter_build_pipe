@@ -39,16 +39,24 @@ build_pipe:
       # The `--bp-output` flag overrides it, e.g. `--bp-output=plain`
       # optional -- default: auto
       output: auto
-      # The command that will be run before the platforms are built
-      # This command will be executed as it's provided
+      # The commands run before the platforms, for each build_pipe command
       # Useful for running code generators or other pre-build tasks
+      # When it fails, no platform runs
+      # Read more about the hooks and the run order in the hooks doc
       # optional -- default: null
-      pre_build_command: your pre-build command # e.g. dart run build_runner build --delete-conflicting-outputs
-      # The command that will be run after the all platforms have been
-      # built (successfully or not)
-      # This command will be executed as it's provided
+      pre_platform_run:
+        build: your pre-build command # e.g. dart run build_runner build --delete-conflicting-outputs
+        publish: your pre-publish command
+      # The commands run after the platforms, for each build_pipe command
+      # `on_success` runs only when nothing has failed, and `finally` runs in any case
       # optional -- default: null
-      post_build_command: your post-build command # e.g. sh ./post-build.sh
+      post_platform_run:
+        build:
+          on_success: your post-build command # e.g. sh ./tag_release.sh
+          finally: your cleanup command # e.g. sh ./cleanup.sh
+        publish:
+          on_success: your post-publish command
+          finally: your cleanup command
       # The environment variable pointing to the location
       # of the derived data of XCode
       # If provided, the derived data will be erased before iOS or macOS builds
@@ -101,6 +109,17 @@ common:
     # The command is run as you provide it
     # required if build config is present
     build_command: your build command      
+    # The command run before the build of the platform
+    # When it fails, the build of the platform is skipped
+    # optional -- default: null
+    pre_command: your command # e.g. sh ./install_certificates.sh
+    # The commands run after the build of the platform
+    # `on_success` runs only when nothing of the platform has failed, and `finally` runs in any case
+    # The `publish` config of iOS and Android accepts the same `pre_command` and `post_command`
+    # optional -- default: null
+    post_command:
+      on_success: your command # e.g. sh ./upload_symbols.sh
+      finally: your command # e.g. sh ./remove_certificates.sh
 
 # These properties are only applicable to web
 web:
