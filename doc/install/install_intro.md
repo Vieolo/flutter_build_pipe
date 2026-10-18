@@ -33,9 +33,12 @@ build_pipe:
       # Whether to generate log files
       # optional -- default: true
       generate_log: true
-      # Whether to print the output of the commands to the terminal as they are being run
-      # optional -- default: false
-      print_stdout: false
+      # How the output of the run is shown.
+      # The options are: auto | interactive | plain | verbose | json
+      # `verbose` also prints the whole output of the commands as they run
+      # The `--bp-output` flag overrides it, e.g. `--bp-output=plain`
+      # optional -- default: auto
+      output: auto
       # The command that will be run before the platforms are built
       # This command will be executed as it's provided
       # Useful for running code generators or other pre-build tasks
