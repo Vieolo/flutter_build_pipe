@@ -43,6 +43,18 @@ The pipeline for building & publishing your Flutter app for different target pla
 - Adds the version query parameter to build files post-build to solve the caching problem of Flutter web (e.g. `flutter_bootstrap.js?v=0.12.1`)
 
 
+## Installation
+Add `build_pipe` to your dev dependencies, and generate a starting config in your `pubspec.yaml`:
+
+```bash
+dart pub add --dev build_pipe
+
+# Adds a `default` workflow to the end of pubspec.yaml, with every field of the config.
+# The platforms with a folder in your project are set up, and the rest is commented out
+dart run build_pipe:init
+```
+
+
 ## Usage
 Once the configuration is added to your project, `flutter_build_pipe` offers you two commands:
 
