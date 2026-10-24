@@ -5,13 +5,45 @@
 # move those between folders freely without losing this. Commit it so your
 # team shares the setup.
 
-# bootstrap: the central store profiles whose rules load eagerly here.
-#   List more than one to combine entry points — [python, cli] for a Python
-#   project that also ships a CLI. They compose in order, and an item both
-#   profiles select is loaded once. A bare name works too: bootstrap: python
-#   The --bootstrap flag to `contour mcp` overrides this.
-bootstrap: [dart]
-
-# eager_files: files loaded eagerly as project rules, paths relative to the
-#   project root. Keep a CLAUDE.md or AGENTS.md without moving it into rules/.
-eager_files: []
+# presets: named starting points for an agent session in this project. Each
+#   one says what a session starts with (startup) and what it may reach at all
+#   (access). "default" is loaded when a session starts; ask the agent to load
+#   any other, or start with it by passing --preset <name> to "contour mcp".
+#   A preset inherits nothing from default: each lists everything it needs.
+#
+#   In a project with several unrelated parts — a monorepo, say — keep default
+#   light: it is always loaded, so give it only what every session needs, and
+#   put each part in a preset of its own. A second preset looks like this:
+#
+#     frontend:
+#       description: The React app (shown when the agent lists the presets)
+#       startup:
+#         profiles: [react]
+#         files: [frontend/AGENTS.md]
+presets:
+  default:
+    # startup: what a session with this preset starts with.
+    startup:
+      # profiles: whose rules load eagerly, and whose skills and knowledge are
+      #   listed for the agent to fetch. List several to combine them —
+      #   [python, cli] — in the order they compose. Looked up in this project
+      #   first, then your central store.
+      profiles: [dart]
+      # local_store: which of this project's own items (in .agents/, .contour/
+      #   or .claude/) the session starts with. Whichever you pick, all of them
+      #   stay reachable through the list, search and get tools.
+      #     all        every one; local rules load eagerly (the default)
+      #     selected   only those the profiles above select by tag
+      # local_store: all
+      #
+      # files: project files loaded eagerly as rules, paths relative to the
+      #   project root. Keep a CLAUDE.md or AGENTS.md without restructuring it.
+      files: []
+    # access: what a session with this preset may reach at all.
+    #   central_store: whether it uses your central store.
+    #     true       yes (the default)
+    #     false      this project's local store only: none of your central
+    #                store reaches the session, which keeps a developer's
+    #                personal store out of it
+    # access:
+    #   central_store: true
