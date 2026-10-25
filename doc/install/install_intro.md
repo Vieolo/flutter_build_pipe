@@ -1,6 +1,15 @@
 # Install & Setup
 Add `build_pipe` to your dev dependencies and add configuration to your `pubspec.yaml`. 
 
+The quickest start is to let build_pipe write the configuration for you:
+
+```bash
+dart pub add --dev build_pipe
+dart run build_pipe:init
+```
+
+`init` adds a `default` workflow to the end of your `pubspec.yaml`, with every field of the config. The platforms with a folder in your project (`android`, `ios`, `macos`, `windows`, `linux`, `web`) are set up with their build command and the default values, and the rest of the platforms and the optional fields are commented out. It does not change a `pubspec.yaml` that already has a `build_pipe` config. To see the config without changing `pubspec.yaml`, run `dart run build_pipe:init --print`.
+
 `build_pipe` object should be at the root level of your `pubspec.yaml` in the same column as the `flutter` object.
 
 In `build_pipe` config, you can define multiple workflows, each with its own configuration. You need to define at least one workflow but can define as many as you want, each with its own name. The only reserved name is `default` which will be run when no workflow is specified while running the `build` or `publish` command.

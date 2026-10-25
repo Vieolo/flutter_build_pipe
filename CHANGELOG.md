@@ -1,3 +1,8 @@
+## 0.4.1
+
+- Added the `init` command, which adds a starting config to `pubspec.yaml`
+- Updated the dependencies, including `googleapis` and `googleapis_auth`
+
 ## 0.4.0
 
 2026-10-18
