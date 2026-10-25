@@ -25,19 +25,22 @@ jobs:
         id: changelog
         shell: bash
         run: |
-          TAG_NAME=$(git describe --tags --abbrev=0)
-          VERSION="${TAG_NAME#v}"
+          # The tag that triggered the workflow, e.g. v0.4.1
+          VERSION="${GITHUB_REF_NAME#v}"
 
-          echo "Tag: $TAG_NAME"
+          echo "Tag: $GITHUB_REF_NAME"
           echo "Version: $VERSION"
 
-          sed -n "/^##[[:space:]]\+$VERSION$/,/^##[[:space:]]/{
-            /^##[[:space:]]\+$VERSION$/p
-            /^##[[:space:]]/{
-              /^##[[:space:]]\+$VERSION$/!q
-            }
-            p
-          }" CHANGELOG.md > "${{ runner.temp }}/release_notes.txt"
+          # The section of the version in the changelog, from the line after its heading up to the next heading.
+          # The heading is left out, since GitHub already shows the version as the name of the release,
+          # so the notes start with the date of the release
+          awk -v heading="## $VERSION" '
+            { line = $0; sub(/[ \t\r]+$/, "", line) }
+            line == heading { found = 1; next }
+            found && /^## / { exit }
+            found && !started && line == "" { next }
+            found { started = 1; print }
+          ' CHANGELOG.md > "${{ runner.temp }}/release_notes.txt"
 
           if [ ! -s "${{ runner.temp }}/release_notes.txt" ]; then
             echo "Changelog entry for version $VERSION not found"

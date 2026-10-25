@@ -4,12 +4,17 @@ import 'package:args/args.dart';
 import 'package:build_pipe/runner/output_mode.dart';
 import 'package:build_pipe/utils/console.utils.dart';
 
-enum HelpCommand { build, publish }
+enum HelpCommand { build, publish, init }
 
 /// Handles the print of the content of the `--help` flag
 ///
 /// Once printed, the program will exit with a `0` exit code
 void handleCommandHelpFlag(List<String> args, HelpCommand command) {
+  if (args.contains("--help") && command == HelpCommand.init) {
+    _printInitHelp();
+    exit(0);
+  }
+
   if (args.contains("--help")) {
     var options = ArgParser();
     options
@@ -86,6 +91,33 @@ void handleCommandHelpFlag(List<String> args, HelpCommand command) {
   }
 }
 
+/// The `--help` of `build_pipe:init`, which has no workflow and no run
+void _printInitHelp() {
+  var flags = ArgParser();
+  flags
+    ..addFlag("print", help: "Prints the config instead of adding it to pubspec.yaml", negatable: false)
+    ..addFlag("help", help: "Provides additional explanation for the command", negatable: false);
+
+  Console.logInfo("\nAdds a starting build_pipe config to the pubspec.yaml of your project\n");
+
+  Console.logWarning("DESCRIPTION");
+  print(
+    "  Adds a `default` workflow to the end of pubspec.yaml, with every field of the config. "
+    "The platforms with a folder in the project are set up with their build command, and the rest of the platforms and the optional fields are commented out. "
+    "Nothing is changed when pubspec.yaml already has a build_pipe config.",
+  );
+
+  Console.logWarning("\nUSAGE");
+  print("  dart run build_pipe:init [FLAGS]\n");
+
+  Console.logWarning("\nEXAMPLE");
+  print("  dart run build_pipe:init");
+  print("  dart run build_pipe:init --print\n");
+
+  Console.logWarning("FLAGS");
+  print(flags.usage);
+}
+
 void handleMainHelpFlag(List<String> args) {
   var flags = ArgParser();
   flags.addFlag("help", help: "Provides additional explanation for the command", negatable: false);
@@ -96,10 +128,12 @@ void handleMainHelpFlag(List<String> args) {
   print("  dart run build_pipe:[COMMAND] [OPTIONS]");
 
   Console.logWarning("\nEXAMPLE");
+  print("  dart run build_pipe:init");
   print("  dart run build_pipe:build --workflow=local_build");
   print("  dart run build_pipe:publish --workflow=local_publish\n");
 
   Console.logWarning("Available Commands");
+  print("  init     Adds a starting build_pipe config to pubspec.yaml");
   print("  build    Builds the app");
   print("  publish  Publishes the app to external stores");
 
